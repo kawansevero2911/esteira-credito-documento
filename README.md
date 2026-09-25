@@ -43,19 +43,18 @@ Validação do JSON Schema
 
 ## 3. Endpoints
 
-### `GET /api/saude`
+A documentação completa e interativa dos endpoints está no Swagger (`/docs`). Resumo:
 
-Verifica se a API está disponível.
+| Método | Rota | Descrição | Respostas |
+|---|---|---|---|
+| GET | `/api/saude` | Verifica se a API está disponível | 200 |
+| POST | `/api/documentos` | Valida a operação (JSON Schema) e executa o fluxo documental | 201, 400, 422 |
+| GET | `/api/documentos/{documento_id}` | Consulta os metadados de um documento gerado | 200, 404 |
 
-### `POST /api/documentos`
+- **400 `DADOS_INVALIDOS`**: o JSON é um objeto, mas não atende ao contrato `OperacaoCredito`. Nenhum PDF é gerado.
+- **422**: o corpo nem é um objeto JSON (erro de formato tratado pelo FastAPI).
 
-Recebe uma operação de crédito, valida o JSON recebido contra o JSON Schema e executa o fluxo de estruturação e emissão documental.
-
-### `GET /api/documentos/{documento_id}`
-
-Consulta os metadados de um documento previamente gerado.
-
-## 4. Tecnologias
+## 4. Tecnologias## 4. Tecnologias
 
 - Python 3.10+
 - FastAPI
@@ -97,13 +96,35 @@ A API ficará disponível em:
 http://127.0.0.1:8000
 ```
 
-A documentação automática OpenAPI/Swagger pode ser acessada em:
+Acessar `http://127.0.0.1:8000/` redireciona para a documentação.
 
-```text
-http://127.0.0.1:8000/docs
+## 5.1 Documentação Swagger / OpenAPI
+
+| Endereço | Conteúdo |
+|---|---|
+| `http://127.0.0.1:8000/docs` | Swagger UI (interativo, com "Try it out") |
+| `http://127.0.0.1:8000/redoc` | ReDoc (leitura) |
+| `http://127.0.0.1:8000/openapi.json` | Especificação OpenAPI 3.1 em JSON |
+
+O que está documentado no Swagger:
+
+- descrição da API, do fluxo e um passo a passo de teste;
+- endpoints agrupados por tag (**Infraestrutura** e **Documentos**), com resumo e descrição;
+- corpo do `POST /api/documentos` usando o **próprio JSON Schema do contrato** (`schemas/operacao_credito.schema.json`), publicado como `OperacaoCredito`;
+- exemplos prontos (`operacao_valida` e `operacao_invalida`) selecionáveis no "Try it out";
+- modelos de resposta de sucesso e de erro (`DocumentoCriado`, `DocumentoMetadados`, `ErroDadosInvalidos`, `ErroNaoEncontrado`).
+
+Para gerar o arquivo `docs/openapi.json` sem subir o servidor (útil para enviar aos outros grupos ou abrir no https://editor.swagger.io):
+
+```bash
+python -m scripts.exportar_openapi
 ```
 
-> A documentação Swagger está disponível nesta versão porque é gerada automaticamente pelo FastAPI. A revisão e o refinamento da documentação dos contratos estão previstos como atividade de continuidade.
+Para rodar os testes (inclui testes da documentação Swagger):
+
+```bash
+pytest
+```
 
 ## 6. Teste rápido
 
@@ -123,7 +144,8 @@ Para testar a validação, envie `examples/operacao_invalida.json`.
 
 ```text
 src/
-  api.py                  # endpoints REST e modelos da API
+  api.py                  # endpoints REST e configuração do Swagger/OpenAPI
+  modelos.py              # modelos de resposta documentados no Swagger
   processo.py             # orquestração do processo documental
   validador.py            # validação JSON Schema
   mapeador.py             # mapeamento para o documento
@@ -139,8 +161,12 @@ storage/
   pdfs/
   documentos/
   eventos/
+scripts/
+  exportar_openapi.py     # gera docs/openapi.json
+docs/
+  arquitetura.md
 tests/
-  test_api.py
+  test_api.py             # endpoints + documentação Swagger
 mudancas.txt
 requirements.txt
 ```
@@ -164,5 +190,5 @@ Portanto, esta entrega não declara como implementada uma integração externa q
 2. Substituir o armazenamento local por uma base orientada a documentos, se essa decisão for adotada pelo grupo.
 3. Substituir a publicação simulada por um barramento compartilhado.
 4. Evoluir os templates para diferentes produtos financeiros.
-5. Refinar a documentação OpenAPI/Swagger dos endpoints e exemplos.
+5. Manter a documentação Swagger atualizada a cada mudança de contrato.
 6. Adicionar testes de integração com os serviços dos demais grupos quando os endpoints definitivos estiverem disponíveis.

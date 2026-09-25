@@ -1,6 +1,13 @@
 PROJETO: ESTEIRA DE CRÉDITO
 GRUPO: ESTRUTURAÇÃO DE DOCUMENTOS NÃO RELACIONAIS (JSON, PDF)
 ENTREGA: EVOLUÇÃO DO PROTÓTIPO PARA SERVIÇO REST
+ATUALIZAÇÃO: INTEGRAÇÃO E DISPONIBILIZAÇÃO DAS APIs - DOCUMENTAÇÃO SWAGGER
+REPOSITÓRIO: https://github.com/<usuario>/esteira-credito-documentos
+
+HISTÓRICO
+- v1.0.0: protótipo transformado em API REST (seções 1 a 12).
+- v1.1.0: Swagger/OpenAPI configurado para documentar os endpoints
+  (seção 13).
 
 ======================================================================
 1. CONTEXTO DO PROJETO
@@ -303,7 +310,8 @@ funcionalidades já concluídas.
 
 1. Consolidar os contratos de interface com os demais grupos.
 2. Versionar os JSON Schemas.
-3. Refinar a documentação OpenAPI/Swagger.
+3. Refinar a documentação OpenAPI/Swagger. (CONCLUÍDO na v1.1.0 - ver
+   seção 13)
 4. Implementar testes de integração quando os serviços externos estiverem
 disponíveis.
 5. Avaliar a substituição do armazenamento local por uma base orientada a
@@ -324,3 +332,128 @@ Esteira de Crédito.
 O objetivo desta etapa não foi afirmar que todos os módulos da Esteira já
 estão integrados, mas criar uma base funcional, testável e documentada para
 que essa integração possa ocorrer conforme os contratos forem consolidados.
+
+
+======================================================================
+13. ATUALIZAÇÃO v1.1.0 - SWAGGER CONFIGURADO PARA DOCUMENTAÇÃO DOS
+    ENDPOINTS
+======================================================================
+
+13.1. COMO ESTAVA
+
+Na v1.0.0 a API já exibia o Swagger em /docs, mas apenas com o que o FastAPI
+gera sozinho. Na prática:
+
+- os endpoints apareciam só com o nome da função (ex.: "Criar Documento"),
+  sem resumo nem explicação do que fazem;
+- o corpo do POST /api/documentos aparecia como um objeto genérico
+  ("additionalProperties: true"), sem nenhum campo. Quem abria o Swagger não
+  sabia quais campos enviar, quais eram obrigatórios nem os tipos de produto
+  aceitos;
+- não havia exemplo de requisição: para testar era preciso copiar o JSON de
+  examples/ manualmente;
+- as respostas não tinham modelo definido: o 201 aparecia sem campos e
+  o Swagger não mostrava as respostas 400 (DADOS_INVALIDOS) e 404 (documento não
+  encontrado);
+- as tags "Infraestrutura" e "Documentos" existiam, mas sem descrição;
+- a própria mudancas.txt (item 4.7) e o README registravam o refinamento do
+  Swagger como atividade pendente;
+- os testes cobriam só 3 cenários (saúde, criação válida e inválida) e não
+  verificavam a documentação.
+
+13.2. MUDANÇAS REALIZADAS
+
+a) src/api.py - configuração do Swagger
+   - Descrição geral da API em Markdown: responsabilidade do grupo, fluxo
+     BPMN resumido e um passo a passo de como testar pelo "Try it out".
+   - Descrição das tags "Infraestrutura" e "Documentos".
+   - summary e description em todos os endpoints.
+   - Versão da API alterada de 1.0.0 para 1.1.0.
+   - Parâmetros do Swagger UI: endpoints listados recolhidos, modelos
+     visíveis e tempo de resposta exibido em cada chamada.
+   - Rota "/" redireciona para "/docs" (não aparece na documentação).
+
+b) Contrato de entrada documentado com o próprio JSON Schema
+   - O Swagger passou a usar o arquivo schemas/operacao_credito.schema.json
+     como o schema "OperacaoCredito" do corpo do POST /api/documentos.
+   - Foram removidos apenas os campos $schema e $id, que não se aplicam
+     dentro do OpenAPI. O OpenAPI 3.1 usa o mesmo JSON Schema 2020-12 que a
+     validação já usa, então não foi preciso reescrever o contrato.
+
+c) Exemplos de requisição
+   - Os arquivos examples/operacao_valida.json e
+     examples/operacao_invalida.json aparecem como exemplos selecionáveis no
+     "Try it out", cada um com o resultado esperado (201 ou 400).
+
+d) src/modelos.py (novo) - modelos de resposta
+   - Saude, DocumentoCriado (com DocumentoResumo e EventoDocumentoGerado),
+     DocumentoMetadados, ErroDadosInvalidos e ErroNaoEncontrado.
+   - Cada campo tem descrição e exemplo.
+   - Os endpoints declaram as respostas 201/400 (POST) e 200/404 (GET), e
+     o FastAPI mantém a 422 para corpo que não é um objeto JSON.
+
+e) Parâmetro documento_id
+   - Recebeu descrição (de onde vem o valor) e exemplo.
+
+f) scripts/exportar_openapi.py (novo)
+   - Gera docs/openapi.json sem subir o servidor, com o comando
+     "python -m scripts.exportar_openapi". O arquivo pode ser enviado aos
+     outros grupos ou aberto em https://editor.swagger.io.
+
+g) Testes (tests/test_api.py) - de 3 para 11 testes
+   - Novos testes de endpoint: consultar um documento criado e consultar
+     um documento inexistente (404); o teste inválido agora confirma que
+     nenhum PDF foi gerado.
+   - Novos testes de documentação: /docs, /redoc e o redirecionamento de
+     "/" respondem; todos os endpoints têm summary, description e tag; o
+     corpo do POST referencia o schema OperacaoCredito, que é igual ao
+     arquivo do contrato; os exemplos estão presentes; as respostas de erro
+     400 e 404 estão documentadas.
+   - pytest.ini (novo) permite rodar os testes apenas com "pytest".
+
+h) README.md
+   - Tabela de endpoints com os códigos de resposta.
+   - Nova seção "Documentação Swagger / OpenAPI" com os endereços /docs,
+     /redoc e /openapi.json, o que está documentado e como exportar.
+
+O QUE NÃO MUDOU
+- A lógica do processo (validar, mapear, gerar PDF, armazenar, publicar) é
+  a mesma da v1.0.0.
+- A validação da entrada continua sendo feita pelo JSON Schema via
+  jsonschema, com o mesmo erro 400 DADOS_INVALIDOS. Os modelos Pydantic
+  foram usados apenas nas respostas.
+- O contrato de entrada e os formatos de resposta não mudaram. Os
+  consumidores atuais não são afetados.
+
+13.3. POR QUE AS MUDANÇAS FORAM FEITAS
+
+- Integração com os outros grupos: Score, Decisão, Cálculo de Juros e
+  Financiamento de Automóveis precisam saber exatamente o que enviar e o
+  que recebem. Com o Swagger documentado, o contrato fica disponível em um
+  endereço da própria API, sem depender de conversas ou arquivos soltos.
+- Uma fonte única para o contrato: se o Swagger tivesse um modelo próprio,
+  escrito à parte, ele poderia ficar diferente do JSON Schema que a API
+  realmente usa para validar. Reaproveitar o arquivo do schema garante que
+  a documentação mostra exatamente o que é validado.
+- Manter o erro 400 DADOS_INVALIDOS: se a entrada fosse validada por um
+  modelo Pydantic, o FastAPI passaria a responder 422 com outro formato de
+  erro, quebrando o comportamento combinado e o gateway "Dados válidos?"
+  do BPMN. Por isso o Pydantic ficou restrito às respostas.
+- Testar pela própria documentação: os exemplos prontos permitem que o
+  professor e os outros grupos executem o fluxo válido e o inválido
+  direto pelo navegador.
+- Documentar os erros: quem integra precisa tratar o 400 e o 404, então
+  esses retornos também precisam estar descritos.
+- Evitar que a documentação fique desatualizada: os testes falham se
+  um endpoint for criado sem descrição ou se o Swagger deixar de refletir
+  o contrato.
+
+13.4. COMO VERIFICAR
+
+1. pip install -r requirements.txt
+2. pytest                          (11 testes devem passar)
+3. uvicorn src.api:app --reload
+4. Abrir http://127.0.0.1:8000/docs
+5. Em POST /api/documentos > Try it out, escolher "operacao_valida" e
+   executar (201); depois "operacao_invalida" (400).
+6. Copiar o documento_id e consultar em GET /api/documentos/{documento_id}.
