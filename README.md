@@ -1,5 +1,7 @@
 # Esteira de Crédito — Estruturação de Documentos
 
+Repositório: https://github.com/kawansevero2911/esteira-credito-documento
+
 ## 1. Objetivo
 
 Este projeto implementa o serviço responsável pela **estruturação e emissão de documentos da Esteira de Crédito**. O serviço recebe dados de uma operação em JSON, valida a estrutura recebida, mapeia os dados para um modelo documental, gera um PDF, registra os metadados do documento em armazenamento orientado a documentos e publica uma referência do documento gerado.

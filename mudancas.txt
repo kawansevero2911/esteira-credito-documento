@@ -2,7 +2,7 @@ PROJETO: ESTEIRA DE CRÉDITO
 GRUPO: ESTRUTURAÇÃO DE DOCUMENTOS NÃO RELACIONAIS (JSON, PDF)
 ENTREGA: EVOLUÇÃO DO PROTÓTIPO PARA SERVIÇO REST
 ATUALIZAÇÃO: INTEGRAÇÃO E DISPONIBILIZAÇÃO DAS APIs - DOCUMENTAÇÃO SWAGGER
-REPOSITÓRIO: https://github.com/<usuario>/esteira-credito-documentos
+REPOSITÓRIO: https://github.com/kawansevero2911/esteira-credito-documento
 
 HISTÓRICO
 - v1.0.0: protótipo transformado em API REST (seções 1 a 12).
