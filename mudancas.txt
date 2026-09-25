@@ -1,0 +1,326 @@
+PROJETO: ESTEIRA DE CRÉDITO
+GRUPO: ESTRUTURAÇÃO DE DOCUMENTOS NÃO RELACIONAIS (JSON, PDF)
+ENTREGA: EVOLUÇÃO DO PROTÓTIPO PARA SERVIÇO REST
+
+======================================================================
+1. CONTEXTO DO PROJETO
+======================================================================
+
+O projeto está inserido na Esteira de Crédito da disciplina de Análise e
+Projeto de Sistemas I. O grupo é responsável pela camada de estruturação e
+emissão de documentos da operação de crédito.
+
+Na primeira entrega, a responsabilidade definida para o grupo foi receber
+uma operação em JSON, validar sua estrutura, mapear os dados para um modelo
+documental, gerar um documento em PDF, armazenar os metadados do documento em
+um repositório orientado a documentos e publicar uma referência do documento
+gerado.
+
+O processo foi modelado em BPMN com o seguinte fluxo:
+
+recebimento dos dados -> validação -> decisão "Dados válidos?" ->
+mapear dados -> gerar PDF -> armazenar -> publicar evento -> documento
+disponibilizado.
+
+======================================================================
+2. COMO O PROJETO ESTAVA ANTES
+======================================================================
+
+Antes desta evolução, o grupo possuía um protótipo local desenvolvido em
+Python.
+
+O protótipo era executado diretamente pelo arquivo principal e carregava um
+JSON de exemplo. A execução realizava as etapas do processo documental de
+forma local.
+
+A estrutura original possuía módulos separados para:
+
+- validação da operação;
+- mapeamento dos dados;
+- geração do PDF;
+- armazenamento dos metadados;
+- publicação simulada do evento;
+- orquestração do fluxo.
+
+Também existiam:
+
+- um JSON Schema para a operação de crédito;
+- um exemplo de operação;
+- diretórios para armazenamento dos PDFs e metadados.
+
+O armazenamento era simulado por arquivos JSON em disco, representando um
+repositório orientado a documentos.
+
+A publicação do evento também era simulada: o protótipo imprimia no terminal
+uma estrutura de evento com a referência do documento gerado.
+
+A validação original utilizava uma implementação simplificada de um subconjunto
+de JSON Schema, evitando dependência de uma biblioteca externa.
+
+======================================================================
+3. LIMITAÇÕES IDENTIFICADAS NO PROTÓTIPO
+======================================================================
+
+As principais limitações identificadas foram:
+
+1. A funcionalidade não estava exposta como uma API REST.
+2. O fluxo dependia da execução direta do programa principal.
+3. A entrada era baseada em um arquivo JSON de exemplo, e não em uma
+   interface de comunicação entre módulos.
+4. A validação era uma implementação simplificada de JSON Schema.
+5. O armazenamento ainda era feito em arquivos locais.
+6. A publicação do evento era apenas uma simulação por saída no terminal.
+7. O contrato da operação ainda precisava ser preparado para integração com
+   os demais módulos da Esteira.
+8. Não havia uma interface HTTP documentável para consumo pelos outros grupos.
+
+======================================================================
+4. ALTERAÇÕES REALIZADAS
+======================================================================
+
+4.1. TRANSFORMAÇÃO DO PROTÓTIPO EM API REST
+
+Foi criada uma API REST utilizando FastAPI.
+
+Endpoint criado:
+
+POST /api/documentos
+
+Responsabilidade:
+- receber os dados da operação em JSON;
+- iniciar o processo de validação;
+- executar o fluxo documental;
+- retornar o identificador do documento e a referência do evento gerado.
+
+Também foi criado:
+
+GET /api/documentos/{documento_id}
+
+Responsabilidade:
+- consultar os metadados de um documento previamente gerado.
+
+Foi criado ainda:
+
+GET /api/saude
+
+Responsabilidade:
+- permitir uma verificação simples da disponibilidade do serviço.
+
+4.2. VALIDAÇÃO POR JSON SCHEMA
+
+A validação simplificada existente foi substituída pela utilização da
+biblioteca jsonschema com o Draft 2020-12.
+
+A API valida os dados antes de executar o mapeamento, a geração do PDF, o
+armazenamento e a publicação do evento.
+
+Quando os dados não atendem ao contrato, a API retorna erro de validação e o
+fluxo documental não continua.
+
+4.3. ORGANIZAÇÃO DO FLUXO DE NEGÓCIO
+
+A lógica principal foi retirada do arquivo de execução direta e organizada no
+módulo processo.py.
+
+Isso separa a camada HTTP da lógica do processo e mantém as responsabilidades
+identificadas na primeira entrega.
+
+4.4. GERAÇÃO DO DOCUMENTO
+
+A geração do PDF foi mantida como uma responsabilidade independente, usando
+o módulo gerador_pdf.py.
+
+O mapeador prepara os dados para o documento e o gerador cria o arquivo PDF.
+
+4.5. ARMAZENAMENTO
+
+Foi mantida a estratégia de armazenamento local orientado a documentos como
+solução desta etapa.
+
+Os metadados são armazenados em JSON e recebem um identificador único.
+
+A interface RepositorioDocumentos foi preservada para facilitar uma futura
+substituição por uma base de documentos, como MongoDB ou outra solução que
+venha a ser definida pelo grupo.
+
+4.6. PUBLICAÇÃO DO EVENTO
+
+A publicação do evento continua sendo uma simulação, mas deixou de depender
+apenas de um print no terminal.
+
+O evento estruturado também é registrado em arquivo JSON, permitindo que o
+formato da mensagem seja testado e posteriormente substituído por uma
+integração com um barramento real.
+
+O evento contém, entre outras informações:
+- evento;
+- id_operacao;
+- documento_id;
+- caminho_pdf;
+- data/hora de publicação.
+
+4.7. DOCUMENTAÇÃO AUTOMÁTICA DA API
+
+A API foi construída com FastAPI, que disponibiliza uma especificação
+OpenAPI e uma interface Swagger UI automaticamente.
+
+A documentação pode ser acessada em /docs quando a aplicação estiver em
+execução.
+
+A revisão e o refinamento dos contratos, exemplos e descrições dos endpoints
+continuam como atividade de documentação do projeto.
+
+4.8. TESTES
+
+Foram preparados testes automatizados para:
+
+- verificar a disponibilidade da API;
+- verificar o fluxo de criação de um documento com operação válida;
+- verificar a rejeição de uma operação inválida.
+
+Os testes verificam tanto o caminho de sucesso quanto o caminho de erro,
+coerentes com o gateway "Dados válidos?" do processo BPMN.
+
+======================================================================
+5. POR QUE AS ALTERAÇÕES FORAM FEITAS
+======================================================================
+
+A principal motivação foi aproximar o protótipo da arquitetura necessária
+para a Esteira de Crédito.
+
+O protótipo original demonstrava a mecânica interna do processo, mas os
+outros módulos da Esteira precisam de uma interface de comunicação para
+consumir a funcionalidade do grupo.
+
+A criação da API REST permite que a funcionalidade seja acionada por outros
+módulos sem depender da execução manual de um arquivo Python.
+
+A adoção de JSON Schema como contrato formal reduz o risco de que dados em
+formato inesperado avancem para as etapas de geração e armazenamento do
+documento.
+
+A separação entre API, validação, mapeamento, geração, armazenamento e evento
+mantém as responsabilidades desacopladas e favorece a evolução da solução.
+
+======================================================================
+6. INTEGRAÇÃO COM OS OUTROS GRUPOS
+======================================================================
+
+Durante o levantamento dos contratos, o grupo conversou com responsáveis por
+outros módulos da Esteira, incluindo Score, Decisão, Cálculo de Juros e
+Financiamento de Automóveis.
+
+Essas informações foram utilizadas como referência para a evolução da
+arquitetura, mas esta entrega não declara como implementada uma integração
+externa que ainda não possui endpoint definitivo disponibilizado pelo grupo
+responsável.
+
+A API deste grupo está preparada para receber um contrato JSON e executar o
+processo documental. A composição final dos dados recebidos de Score,
+Decisão, Juros e demais módulos deverá ser ajustada quando os contratos
+intergrupos forem oficialmente consolidados.
+
+======================================================================
+7. CONTRATO ATUAL DA OPERAÇÃO
+======================================================================
+
+O contrato desta entrega mantém a estrutura utilizada no protótipo:
+
+- id_operacao
+- tipo_produto
+- cliente.nome
+- cliente.documento
+- valor
+- prazo_meses
+- taxa_juros_mensal
+
+Os tipos de produto previstos no schema atual são:
+
+- financiamento_imovel
+- financiamento_automovel
+- credito_pessoal
+
+Os valores monetários são enviados como números JSON e a validação verifica
+os tipos e limites definidos pelo schema.
+
+======================================================================
+8. TESTES / CENÁRIOS DE VALIDAÇÃO
+======================================================================
+
+Cenário 1 - operação válida:
+
+Entrada: examples/operacao_valida.json
+Resultado esperado:
+- HTTP 201;
+- documento gerado;
+- metadados armazenados;
+- evento registrado;
+- identificador do documento retornado.
+
+Cenário 2 - operação inválida:
+
+Entrada: examples/operacao_invalida.json
+Resultado esperado:
+- HTTP 400;
+- código DADOS_INVALIDOS;
+- detalhes das falhas de validação;
+- nenhuma geração de PDF para a operação rejeitada.
+
+======================================================================
+9. SITUAÇÃO ATUAL APÓS A EVOLUÇÃO
+======================================================================
+
+O projeto passou de um protótipo executado localmente para uma estrutura de
+serviço HTTP com separação entre API e lógica do processo.
+
+O fluxo central continua preservando a proposta original do grupo:
+
+receber -> validar -> mapear -> gerar -> armazenar -> publicar referência.
+
+A solução ainda utiliza armazenamento e publicação locais/simulados, pois a
+integração com infraestrutura compartilhada e os contratos definitivos dos
+demais grupos ainda precisam ser alinhados.
+
+======================================================================
+10. O QUE AINDA NÃO FOI IMPLEMENTADO
+======================================================================
+
+Não foi declarada como concluída nesta entrega nenhuma das seguintes etapas:
+
+- integração com um barramento de mensagens real;
+- conexão com uma base de dados não relacional externa;
+- integração HTTP efetiva com os serviços de Score, Decisão, Cálculo de Juros
+  ou Financiamento de Automóveis;
+- contratos finais que ainda dependam de aprovação/alinhamento entre grupos;
+- templates documentais completos para todos os produtos financeiros.
+
+Esses pontos são tratados como próximos incrementos do projeto, e não como
+funcionalidades já concluídas.
+
+======================================================================
+11. PRÓXIMOS PASSOS
+======================================================================
+
+1. Consolidar os contratos de interface com os demais grupos.
+2. Versionar os JSON Schemas.
+3. Refinar a documentação OpenAPI/Swagger.
+4. Implementar testes de integração quando os serviços externos estiverem
+disponíveis.
+5. Avaliar a substituição do armazenamento local por uma base orientada a
+documentos.
+6. Avaliar a substituição da publicação simulada por um barramento real.
+7. Expandir os templates para diferentes tipos de documentos e produtos.
+8. Avaliar versionamento de schemas para permitir evolução sem quebra dos
+consumidores.
+
+======================================================================
+12. CONCLUSÃO
+======================================================================
+
+A evolução mantém a finalidade definida na primeira entrega e acrescenta uma
+interface de serviço adequada à futura integração da funcionalidade com a
+Esteira de Crédito.
+
+O objetivo desta etapa não foi afirmar que todos os módulos da Esteira já
+estão integrados, mas criar uma base funcional, testável e documentada para
+que essa integração possa ocorrer conforme os contratos forem consolidados.

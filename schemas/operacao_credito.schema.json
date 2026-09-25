@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/operacao_credito.schema.json",
+  "title": "OperacaoCredito",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id_operacao", "tipo_produto", "cliente", "valor", "prazo_meses", "taxa_juros_mensal"],
+  "properties": {
+    "id_operacao": {"type": "string", "minLength": 1},
+    "tipo_produto": {
+      "type": "string",
+      "enum": ["financiamento_imovel", "financiamento_automovel", "credito_pessoal"]
+    },
+    "cliente": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nome", "documento"],
+      "properties": {
+        "nome": {"type": "string", "minLength": 1},
+        "documento": {"type": "string", "minLength": 1}
+      }
+    },
+    "valor": {"type": "number", "minimum": 0},
+    "prazo_meses": {"type": "integer", "minimum": 1},
+    "taxa_juros_mensal": {"type": "number", "minimum": 0}
+  }
+}

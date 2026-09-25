@@ -1,0 +1,10 @@
+{
+  "id_operacao": "OP-2026-000124",
+  "tipo_produto": "financiamento_automovel",
+  "cliente": {
+    "nome": "Cliente Exemplo"
+  },
+  "valor": -1000,
+  "prazo_meses": 0,
+  "taxa_juros_mensal": 1.35
+}
