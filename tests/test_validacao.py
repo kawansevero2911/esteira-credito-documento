@@ -15,6 +15,7 @@ from tests.apoio import (
     exemplo,
     operacao_financeira_valida,
     operacao_minima,
+    operacao_minima_pj,
     score_valido,
 )
 
@@ -241,9 +242,22 @@ def test_modelo_do_score_invalido():
     recusa(alterar(base, "score.modelo.codigo", "SCORE_XX"), "score.modelo.codigo")
 
 
-def test_modelo_do_score_precisa_combinar_com_o_tipo_de_pessoa():
+def test_modelo_do_score_precisa_combinar_com_pessoa_fisica():
+    """Em operacao de PF, o modelo tem de ser SCORE_PF."""
     base = com_bloco("score", score_valido())
+    aceita(base)
     recusa(alterar(base, "score.modelo.codigo", "SCORE_PJ"), "score.modelo.codigo")
+
+
+def test_modelo_do_score_precisa_combinar_com_pessoa_juridica():
+    """Metade simetrica da regra: em operacao de PJ, o modelo tem de ser SCORE_PJ."""
+    base = com_bloco(
+        "score",
+        {**score_valido(), "modelo": {"codigo": "SCORE_PJ", "versao": "v1.1.0"}},
+        base=operacao_minima_pj(),
+    )
+    aceita(base)
+    recusa(alterar(base, "score.modelo.codigo", "SCORE_PF"), "score.modelo.codigo")
 
 
 def test_score_exige_componentes_e_fatores_impacto():

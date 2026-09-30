@@ -93,6 +93,19 @@ Uma operação automotiva **não** exige dados imobiliários, e vice-versa. As
 regras estão no schema, em `allOf` / `if` / `then`, e portanto valem para
 qualquer validador, em qualquer linguagem.
 
+### Coerência entre blocos
+
+| Condição | Exigência |
+|---|---|
+| `cliente.tipoPessoa = "PF"` **e** bloco `score` presente | `score.modelo.codigo = "SCORE_PF"` |
+| `cliente.tipoPessoa = "PJ"` **e** bloco `score` presente | `score.modelo.codigo = "SCORE_PJ"` |
+
+Nenhum campo novo é exigido aqui: os dois códigos de modelo e os dois tipos de
+pessoa foram informados pelo grupo Score, e a correspondência entre eles é o
+único pareamento possível entre os valores declarados. A verificação existe para
+que um resultado calculado pelo modelo errado não entre no documento sem que
+ninguém perceba.
+
 ---
 
 ## 4. Blocos estritos e blocos abertos

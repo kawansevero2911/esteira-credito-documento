@@ -264,8 +264,8 @@
       }
     },
     {
-      "title": "RegraCoerenciaModeloScore",
-      "description": "O codigo do modelo de score deve ser coerente com o tipo de pessoa: SCORE_PF para pessoa fisica e SCORE_PJ para pessoa juridica. Os dois codigos e os dois tipos de pessoa foram informados pelo grupo Score, e a correspondencia entre eles e o unico pareamento possivel entre os valores declarados.",
+      "title": "RegraCoerenciaModeloScorePessoaFisica",
+      "description": "O codigo do modelo de score deve ser coerente com o tipo de pessoa: em operacao de pessoa fisica, o modelo precisa ser SCORE_PF. Os dois codigos (SCORE_PF, SCORE_PJ) e os dois tipos de pessoa (PF, PJ) foram informados pelo grupo Score, e a correspondencia entre eles e o unico pareamento possivel entre os valores declarados. A regra simetrica de pessoa juridica esta em RegraCoerenciaModeloScorePessoaJuridica.",
       "if": {
         "required": [
           "score",
@@ -292,6 +292,43 @@
                 "properties": {
                   "codigo": {
                     "const": "SCORE_PF"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraCoerenciaModeloScorePessoaJuridica",
+      "description": "Metade de pessoa juridica da regra anterior: em operacao de pessoa juridica, o modelo de score precisa ser SCORE_PJ. Nenhum campo novo e exigido - apenas o codigo do modelo, que o grupo Score ja declarou, e verificado contra o tipo de pessoa.",
+      "if": {
+        "required": [
+          "score",
+          "cliente"
+        ],
+        "properties": {
+          "cliente": {
+            "required": [
+              "tipoPessoa"
+            ],
+            "properties": {
+              "tipoPessoa": {
+                "const": "PJ"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "score": {
+            "properties": {
+              "modelo": {
+                "properties": {
+                  "codigo": {
+                    "const": "SCORE_PJ"
                   }
                 }
               }

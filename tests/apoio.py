@@ -38,6 +38,24 @@ def operacao_minima() -> dict[str, Any]:
     }
 
 
+def operacao_minima_pj() -> dict[str, Any]:
+    """Menor operacao canonica valida de pessoa juridica.
+
+    O bloco dadosPJ traz apenas razao social e CNPJ porque o contrato completo
+    de PJ ainda depende do grupo Credito PF e PJ; o schema nao exige nenhum
+    campo interno.
+    """
+    return {
+        "schemaVersion": "1.2.0",
+        "correlacao": {"idOperacao": "OP-TESTE-PJ-0001"},
+        "documento": {"tipoDocumento": "PROPOSTA_CREDITO"},
+        "cliente": {
+            "tipoPessoa": "PJ",
+            "dadosPJ": {"razaoSocial": "Empresa de Teste", "cnpj": "12345678000199"},
+        },
+    }
+
+
 def score_valido() -> dict[str, Any]:
     """Bloco score completo, com todos os campos exigidos pelo grupo Score."""
     return {

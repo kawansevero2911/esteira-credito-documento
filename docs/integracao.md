@@ -307,7 +307,8 @@ para a mesma informação não existir em dois blocos. As **entradas** do cálcu
 (renda, dívida, atrasos, tempo de emprego) ficam em `cadastro`, e idade, estado
 civil e dependentes em `cliente.dadosPF`.
 
-O código do modelo precisa combinar com o tipo de pessoa: `SCORE_PF` para PF.
+O código do modelo precisa combinar com o tipo de pessoa: `SCORE_PF` para PF e
+`SCORE_PJ` para PJ. O contrato recusa a combinação trocada.
 
 ---
 

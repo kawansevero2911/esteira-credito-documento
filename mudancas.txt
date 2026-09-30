@@ -12,6 +12,9 @@ HISTÓRICO
   em blocos por processo, suporte a PF e PJ, regras condicionais por
   produto, modelo documental em seções, templates de PDF por produto,
   interfaces de repositório e de eventos (seção 14).
+- Correção na conferência do contrato 1.2.0: a regra de coerência entre o
+  modelo de score e o tipo de pessoa passou a valer também para pessoa
+  jurídica (seção 15). A versão do contrato continua 1.2.0.
 
 ======================================================================
 1. CONTEXTO DO PROJETO
@@ -804,7 +807,7 @@ arquitetural foi criada e a pendência, registrada.
 14.6. COMO VERIFICAR
 
 1. pip install -r requirements.txt
-2. pytest                                  (131 testes devem passar)
+2. pytest                                  (132 testes devem passar)
 3. python -m scripts.gerar_bundle_schema   (não deve mudar nada)
 4. python -m scripts.exportar_openapi
 5. uvicorn src.api:app --reload
@@ -814,3 +817,80 @@ arquitetural foi criada e a pendência, registrada.
    lista de erros e sem gerar PDF em storage/pdfs/).
 8. Copiar o documento_id de um 201 e consultar em
    GET /api/documentos/{documento_id}.
+
+
+======================================================================
+15. CORREÇÃO - COERÊNCIA DO MODELO DE SCORE EM PESSOA JURÍDICA
+======================================================================
+
+15.1. O QUE ESTAVA ERRADO
+
+O contrato 1.2.0 declara, na própria description da regra
+RegraCoerenciaModeloScore, que o código do modelo de score precisa ser
+coerente com o tipo de pessoa: SCORE_PF para pessoa física e SCORE_PJ
+para pessoa jurídica.
+
+O schema, porém, verificava apenas a metade de pessoa física. Uma
+operação de pessoa jurídica acompanhada de um score calculado pelo
+modelo SCORE_PF era ACEITA, contrariando o que o próprio contrato
+dizia. O documento sairia apresentando um resultado produzido pelo
+modelo errado, sem nenhum aviso.
+
+15.2. O QUE MUDOU
+
+Em schemas/v1/operacao_credito.schema.json, a regra foi dividida em
+duas, seguindo o mesmo padrão que o arquivo já usava para os pares
+RegraPessoaFisica / RegraPessoaJuridica e RegraFinanciamentoImobiliario
+/ RegraFinanciamentoAutomotivo:
+
+- RegraCoerenciaModeloScorePessoaFisica: tipoPessoa PF exige
+  score.modelo.codigo igual a SCORE_PF (comportamento que já existia);
+- RegraCoerenciaModeloScorePessoaJuridica: tipoPessoa PJ exige
+  score.modelo.codigo igual a SCORE_PJ (metade que faltava).
+
+As duas regras só valem quando o bloco score está presente. Uma
+operação sem score continua válida, como antes.
+
+Arquivos alterados:
+
+- schemas/v1/operacao_credito.schema.json - regra dividida em duas;
+- schemas/operacao_credito.schema.json - contrato consolidado regerado
+  por python -m scripts.gerar_bundle_schema;
+- tests/apoio.py - novo apoio operacao_minima_pj(), a menor operação
+  válida de pessoa jurídica;
+- tests/test_validacao.py - o teste
+  test_modelo_do_score_precisa_combinar_com_o_tipo_de_pessoa, que
+  cobria só PF, virou dois testes, um por tipo de pessoa, e cada um
+  confere tanto o par correto (aceito) quanto o par trocado (recusado);
+- docs/contrato-json.md - nova subseção "Coerência entre blocos", com as
+  duas condições em tabela;
+- docs/integracao.md - a frase que mencionava apenas SCORE_PF para PF
+  passou a citar os dois casos.
+
+15.3. POR QUE A VERSÃO DO CONTRATO CONTINUA 1.2.0
+
+Nenhum campo foi criado e nenhuma regra de negócio foi inventada. Os
+dois códigos de modelo (SCORE_PF, SCORE_PJ) e os dois tipos de pessoa
+(PF, PJ) foram informados pelo grupo Score, e a regra já estava escrita
+na description do contrato 1.2.0: o schema apenas não a aplicava por
+inteiro.
+
+Portanto isto não é uma mudança de contrato, e sim a aplicação do
+contrato que já estava publicado. Subir para 1.3.0 sugeriria campo novo,
+e subir para 2.0.0 sugeriria quebra de compatibilidade - nenhuma das
+duas descreve o que aconteceu.
+
+Registro honesto da consequência: uma mensagem de PJ com modelo
+SCORE_PF, que antes era aceita, agora é recusada com erro em
+score.modelo.codigo. Nenhum grupo é afetado, porque a versão 1.2.0 do
+contrato ainda não havia sido publicada no repositório remoto quando a
+correção foi feita.
+
+15.4. COMO VERIFICAR
+
+1. pytest                                  (132 testes devem passar)
+2. python -m scripts.gerar_bundle_schema   (não deve mudar nada)
+3. Enviar em POST /api/documentos uma operação com
+   cliente.tipoPessoa = "PJ" e score.modelo.codigo = "SCORE_PF":
+   deve responder 400 DADOS_INVALIDOS apontando score.modelo.codigo.
+4. Trocar para "SCORE_PJ" e reenviar: deve responder 201.
