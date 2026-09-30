@@ -135,6 +135,20 @@ curl -X POST "http://127.0.0.1:8000/api/documentos" \
   --data-binary @examples/operacao_completa.json
 ```
 
+### Sem conseguir instalar as dependências
+
+Se a máquina não tiver acesso à rede para o `pip install`, há um servidor de
+fumaça que sobe os mesmos três endpoints usando só a biblioteca padrão:
+
+```bash
+python -m scripts.servidor_local
+```
+
+Ele serve para conferir o fluxo por HTTP (201, 400, 200, 404) e para
+apresentar o projeto. **Não substitui o serviço oficial** e não tem Swagger
+nem OpenAPI — as duas camadas chamam a mesma orquestração em `src/processo.py`,
+então o corpo das respostas é o mesmo.
+
 ### Exemplos disponíveis
 
 | Arquivo | Cenário |
