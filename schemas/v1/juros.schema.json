@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/juros.schema.json",
+  "title": "Juros",
+  "description": "Resultado do calculo financeiro do Processo 5 (Calculo de Juros). PENDENCIA: o contrato do Processo 5 ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural do fluxo DECISAO -> JUROS -> CONTROLE FINANCEIRO, aceita propriedades adicionais e nao declara nenhum campo obrigatorio. Os dois campos abaixo sao os unicos com evidencia nos requisitos: aparecem como taxaJuros e sistemaAmortizacao na entrada declarada pelo grupo Controle Financeiro de Operacoes, que os recebe a jusante do calculo de juros. O Processo 6 nao recalcula juros.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "taxaMensal": {
+      "$ref": "comuns.schema.json#/$defs/taxaDecimal",
+      "description": "Taxa mensal calculada, em forma decimal (0.0199 = 1,99% ao mes), na mesma unidade adotada pelo grupo Controle Financeiro de Operacoes."
+    },
+    "sistemaAmortizacao": {
+      "$ref": "comuns.schema.json#/$defs/sistemaAmortizacao",
+      "description": "Sistema de amortizacao adotado no calculo."
+    },
+    "calculadoEm": {
+      "$ref": "comuns.schema.json#/$defs/timestampUtc",
+      "description": "Momento do calculo, em ISO-8601 UTC."
+    }
+  }
+}

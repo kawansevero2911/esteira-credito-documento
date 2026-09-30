@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/operacao_financeira.schema.json",
+  "title": "OperacaoFinanceira",
+  "description": "Operacao financeira contratada e seu cronograma de parcelas, produzidos pelo Processo 2 (Controle Financeiro de Operacoes). Este bloco consolida o que o roteiro arquitetural chamava de operacaoFinanceira e controleFinanceiro: como ambos descrevem a MESMA operacao e o MESMO cronograma, mante-los separados duplicaria informacao sem necessidade. O Processo 6 nao recalcula parcelas nem saldos: apenas apresenta o cronograma recebido.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["numeroOperacao", "status"],
+  "properties": {
+    "id": {
+      "$ref": "comuns.schema.json#/$defs/uuid",
+      "description": "Identificador UUID da operacao, gerado pelo grupo Controle Financeiro de Operacoes."
+    },
+    "numeroOperacao": {
+      "description": "Numero da operacao no formato OP-AAAA-NNNNNN, conforme regra do grupo Controle Financeiro de Operacoes.",
+      "type": "string",
+      "pattern": "^OP-[0-9]{4}-[0-9]{6}$"
+    },
+    "status": {
+      "title": "StatusOperacao",
+      "description": "Situacao da operacao. O grupo Controle Financeiro de Operacoes informou apenas o estado inicial ATIVA. PENDENCIA: os demais estados do ciclo de vida (por exemplo quitada ou cancelada) ainda nao foram informados e serao adicionados ao enum quando definidos.",
+      "type": "string",
+      "enum": ["ATIVA"]
+    },
+    "valorAprovado": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Valor aprovado que originou a operacao, recebido da Decisao."
+    },
+    "saldoDevedor": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Saldo devedor da operacao, gerado pelo grupo Controle Financeiro de Operacoes."
+    },
+    "prazo": {
+      "$ref": "comuns.schema.json#/$defs/prazoMeses",
+      "description": "Prazo da operacao em meses."
+    },
+    "quantidadeParcelas": {
+      "description": "Quantidade de parcelas da operacao.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "taxaJuros": {
+      "$ref": "comuns.schema.json#/$defs/taxaDecimal",
+      "description": "Taxa de juros mensal em forma DECIMAL, com ate 6 casas (0.0199 = 1,99% ao mes), conforme regra do grupo Controle Financeiro de Operacoes. Difere de financiamento.imobiliario.taxaJurosMensal, declarada em percentual pelo grupo Financiamento de Imoveis."
+    },
+    "sistemaAmortizacao": {
+      "$ref": "comuns.schema.json#/$defs/sistemaAmortizacao",
+      "description": "Sistema de amortizacao da operacao."
+    },
+    "primeiroVencimento": {
+      "$ref": "comuns.schema.json#/$defs/data",
+      "description": "Data do primeiro vencimento, no formato YYYY-MM-DD."
+    },
+    "dataAprovacao": {
+      "$ref": "comuns.schema.json#/$defs/data",
+      "description": "Data de aprovacao recebida da Decisao, no formato YYYY-MM-DD."
+    },
+    "criadoEm": {
+      "$ref": "comuns.schema.json#/$defs/timestampUtc",
+      "description": "Momento de criacao da operacao, em ISO-8601 UTC, conforme regra do grupo Controle Financeiro de Operacoes."
+    },
+    "cronograma": {
+      "description": "Cronograma de parcelas gerado pelo grupo Controle Financeiro de Operacoes. Pode ser uma lista vazia quando o cronograma ainda nao foi gerado.",
+      "type": "array",
+      "items": {
+        "title": "Parcela",
+        "description": "Parcela do cronograma. Todos os campos declarados pelo grupo Controle Financeiro de Operacoes sao exigidos, porque a parcela so faz sentido completa.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "numero",
+          "vencimento",
+          "valorParcela",
+          "valorAmortizacao",
+          "juros",
+          "saldoDevedorAposParcela",
+          "status"
+        ],
+        "properties": {
+          "numero": {
+            "description": "Numero sequencial da parcela.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "vencimento": {
+            "$ref": "comuns.schema.json#/$defs/data",
+            "description": "Data de vencimento da parcela, no formato YYYY-MM-DD."
+          },
+          "valorParcela": {
+            "$ref": "comuns.schema.json#/$defs/valorMonetario"
+          },
+          "valorAmortizacao": {
+            "$ref": "comuns.schema.json#/$defs/valorMonetario"
+          },
+          "juros": {
+            "$ref": "comuns.schema.json#/$defs/valorMonetario"
+          },
+          "saldoDevedorAposParcela": {
+            "$ref": "comuns.schema.json#/$defs/valorMonetario"
+          },
+          "status": {
+            "title": "StatusParcela",
+            "description": "Situacao da parcela. O grupo Controle Financeiro de Operacoes informou apenas o estado inicial PENDENTE. PENDENCIA: os demais estados (por exemplo paga ou atrasada) ainda nao foram informados e serao adicionados ao enum quando definidos.",
+            "type": "string",
+            "enum": ["PENDENTE"]
+          }
+        }
+      }
+    }
+  }
+}

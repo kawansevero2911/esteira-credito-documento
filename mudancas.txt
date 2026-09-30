@@ -8,6 +8,10 @@ HISTÓRICO
 - v1.0.0: protótipo transformado em API REST (seções 1 a 12).
 - v1.1.0: Swagger/OpenAPI configurado para documentar os endpoints
   (seção 13).
+- v1.2.0: contrato JSON canônico da Esteira de Crédito - estrutura modular
+  em blocos por processo, suporte a PF e PJ, regras condicionais por
+  produto, modelo documental em seções, templates de PDF por produto,
+  interfaces de repositório e de eventos (seção 14).
 
 ======================================================================
 1. CONTEXTO DO PROJETO
@@ -457,3 +461,356 @@ O QUE NÃO MUDOU
 5. Em POST /api/documentos > Try it out, escolher "operacao_valida" e
    executar (201); depois "operacao_invalida" (400).
 6. Copiar o documento_id e consultar em GET /api/documentos/{documento_id}.
+
+
+======================================================================
+14. ATUALIZAÇÃO v1.2.0 - CONTRATO JSON CANÔNICO DA ESTEIRA DE CRÉDITO
+======================================================================
+
+14.1. COMO ESTAVA
+
+Até a v1.1.0 o contrato de entrada era plano, em snake_case, e servia
+apenas para o protótipo deste grupo:
+
+  {"id_operacao", "tipo_produto", "cliente": {"nome", "documento"},
+   "valor", "prazo_meses", "taxa_juros_mensal"}
+
+Limitações concretas:
+
+- não havia onde colocar as informações dos outros nove processos da
+  Esteira: score, decisão, juros, cronograma de parcelas, promoções,
+  produto financeiro, dados de financiamento;
+- o contrato só representava pessoa física, e de forma indireta: o campo
+  "documento" era um texto livre que tanto podia ser CPF quanto CNPJ;
+- não havia distinção entre o que é obrigatório sempre e o que é
+  obrigatório apenas para determinado produto;
+- o schema era um único arquivo, sem versionamento declarado;
+- validavam-se tipos e faixas simples; não havia validação de CPF, de
+  data real, de timestamp UTC, de casas decimais nem de enums dos outros
+  grupos;
+- o mapeador montava um dicionário fixo de 8 campos, e o PDF era
+  desenhado linha a linha no canvas, com um layout só;
+- o registro de metadados tinha 4 campos e o evento, 5;
+- repositório e publicador eram classes concretas, sem interface;
+- não havia exemplo de PJ, de score, de decisão nem de operação
+  financeira.
+
+14.2. O QUE MUDOU
+
+a) CONTRATO CANÔNICO MODULAR (schemas/v1/)
+
+   O contrato deixou de ser específico deste serviço e passou a ser o
+   contrato canônico da Esteira: um contrato único, dividido em blocos,
+   em que cada processo preenche apenas o que é da sua responsabilidade.
+
+   Blocos e responsáveis:
+     correlacao, metadados ....... comuns a todos os processos
+     documento ................... Processo 6  (este grupo)
+     cliente, cadastro, credito .. Processo 3  (Crédito PF e PJ)
+     promocao .................... Processo 1  (Promoções)
+     produtoFinanceiro ........... Processo 7  (Produtos Financeiros)
+     financiamento ............... Processos 4 (Imóveis) e 8 (Automotivo)
+     score ....................... Processo 10 (Score)
+     juros ....................... Processo 5  (Cálculo de Juros)
+     decisao ..................... Processo 9  (Decisão)
+     operacaoFinanceira .......... Processo 2  (Controle Financeiro)
+
+   Arquivos novos em schemas/v1/: operacao_credito, comuns, correlacao,
+   documento, cliente, cadastro, promocao, credito, produto_financeiro,
+   financiamento, score, juros, decisao, operacao_financeira, metadados.
+
+   CONSOLIDAÇÃO DOCUMENTADA: o roteiro previa os blocos
+   "operacaoFinanceira" e "controleFinanceiro" separados. Os dois
+   descreviam a mesma operação e o mesmo cronograma, produzidos pelo
+   mesmo processo. Foram unificados em "operacaoFinanceira" para não
+   duplicar informação.
+
+b) OBRIGATORIEDADE EM TRÊS NÍVEIS
+
+   Sempre: schemaVersion, correlacao.idOperacao, documento.tipoDocumento
+   e cliente.tipoPessoa. Só isso.
+
+   Por tipo de pessoa (if/then no schema):
+     PF -> exige cliente.dadosPF com nomeCompleto e cpf
+     PJ -> exige cliente.dadosPJ, SEM nenhum campo interno obrigatório
+
+   Por produto (if/then no schema):
+     IMOBILIARIO -> exige financiamento.imobiliario (valorImovel,
+                    valorEntrada, prazoMeses, taxaJurosMensal,
+                    sistemaAmortizacao), cadastro.rendaMensal,
+                    cliente.endereco (logradouro e cidade) e, para PF,
+                    dataNascimento
+     AUTOMOTIVO  -> exige apenas financiamento.automotivo, sem campos
+
+   Operação automotiva não exige dados imobiliários, e vice-versa.
+
+c) BLOCOS ABERTOS PARA CONTRATOS QUE AINDA NÃO EXISTEM
+
+   promocao, credito, produtoFinanceiro, juros, decisao,
+   financiamento.automotivo e cliente.dadosPJ usam
+   additionalProperties: true e não exigem nada. A área arquitetural
+   existe, nada é inventado, e a pendência fica escrita na própria
+   description do schema. Os demais blocos são estritos
+   (additionalProperties: false).
+
+d) VALIDAÇÃO DE VERDADE (src/validador.py)
+
+   Passou a validar: CPF com 11 dígitos, CNPJ com 14, datas que existem
+   no calendário (2026-02-31 é recusada), timestamps ISO-8601 em UTC,
+   score inteiro de 0 a 1000, numeroOperacao no padrão OP-AAAA-NNNNNN,
+   casas decimais (2 para dinheiro, 6 para taxa) e todos os enums
+   informados pelos grupos.
+
+   Duas extensões foram necessárias:
+
+   - verificação de "format": por especificação, format é só anotação e
+     a maioria dos validadores não a confere. Foram registrados
+     verificadores próprios para date, date-time, uuid e email, escritos
+     só com a biblioteca padrão do Python - sem dependência nova.
+
+   - palavra-chave "x-casasDecimais": o limite de casas decimais NÃO
+     pode usar multipleOf, porque multipleOf opera em ponto flutuante e
+     reprova valores válidos (1234.56 / 0.01 = 123455.99999999999). A
+     comparação é feita em Decimal. Validadores de outras linguagens
+     ignoram a extensão, e isso está documentado.
+
+   O erro passou a vir também em forma estruturada, no campo "erros",
+   com campo/mensagem/regra - mais simples de tratar em Java, Go ou
+   JavaScript. O campo "detalhes" continua no formato de texto da
+   v1.0.0.
+
+e) CONTRATO MODULAR NA FONTE, CONSOLIDADO NA PUBLICAÇÃO
+   (src/contrato.py, scripts/gerar_bundle_schema.py)
+
+   A fonte da verdade são os arquivos de schemas/v1/. Para publicar,
+   eles são consolidados em schemas/operacao_credito.schema.json, que
+   continua sendo o caminho público do contrato - o mesmo de antes.
+   O arquivo consolidado fica versionado no repositório, e um teste
+   falha se ele ficar diferente dos módulos.
+
+f) COMPATIBILIDADE COM A v1.0.0 (src/compatibilidade.py) - ARQUIVO NOVO
+
+   O formato plano antigo CONTINUA FUNCIONANDO. Mensagens antigas são
+   convertidas para o contrato canônico e só então validadas: existe um
+   único contrato e um único ponto de validação. A resposta informa o
+   formato recebido em "formatoEntrada".
+
+   A conversão remove pontuação do documento e usa a quantidade de
+   dígitos para decidir PF (11) ou PJ (14). Ela NÃO preenche campo
+   ausente: o que faltava continua faltando e a validação acusa.
+
+g) MODELO DOCUMENTAL (src/modelo_documental.py) - ARQUIVO NOVO
+
+   Estrutura intermediária imutável entre o contrato e o PDF, em seções,
+   campos e tabelas. O PDF passou a ser gerado do modelo, e não do JSON
+   bruto: o gerador não conhece mais o contrato de entrada.
+
+h) MAPEADOR (src/mapeador.py) - REESCRITO
+
+   De 8 campos fixos para seções por área: CLIENTE, PRODUTO, IMÓVEL,
+   FINANCEIRO (perfil e condições), ANÁLISE, DECISÃO, OPERAÇÃO,
+   PARCELAS e METADADOS. Uma seção só aparece se o bloco correspondente
+   veio.
+
+   O que NÃO veio por depender de outro processo é listado no rodapé do
+   PDF, em "INFORMAÇÕES NÃO RECEBIDAS" - em vez de sumir em silêncio.
+
+   O mapeador formata; não calcula. Não recalcula score, juros, decisão,
+   risco, parcelas nem saldos, e não preenche campo ausente com valor
+   padrão.
+
+i) TEMPLATES DE PDF POR PRODUTO (src/templates_pdf/) - PASTA NOVA
+
+   O template é escolhido por uma chave definida pelo mapeador,
+   resolvida num registro - não por if espalhado pelo gerador.
+   Implementados: proposta_credito (genérico) e proposta_imobiliaria
+   (com painel de destaques).
+
+   Crédito PJ e financiamento automotivo usam o genérico de propósito,
+   porque seus dados ainda não foram definidos.
+
+   A geração passou a usar o Platypus do ReportLab, em vez de desenho
+   direto no canvas: um cronograma pode ter centenas de parcelas, e o
+   Platypus quebra a tabela entre páginas e repete o cabeçalho sozinho.
+   ReportLab continua sendo a biblioteca usada.
+
+j) REPOSITÓRIO (src/repositorio.py) - INTERFACE + IMPLEMENTAÇÃO
+
+   RepositorioDocumentos virou interface (ABC) e
+   RepositorioArquivosJson é a implementação atual. Trocar por MongoDB é
+   escrever uma classe nova. MongoDB NÃO é exigido nesta etapa.
+
+   O registro passou de 4 para 12 campos: documento_id, _id (mantido da
+   v1.0.0), id_operacao, criado_em, tipo_documento, tipo_produto,
+   versao_schema, caminho_pdf, status, hash_documento (SHA-256 do PDF),
+   template e correlacao.
+
+   CORREÇÃO DE SEGURANÇA: a consulta por documento_id passava o valor da
+   URL direto para o caminho do arquivo, então um id como
+   "../../etc/passwd" leria fora da pasta de armazenamento. Agora o
+   identificador é validado antes. O mesmo vale para o nome do PDF, que
+   vem do idOperacao enviado por outro processo e passou a ser
+   higienizado.
+
+k) EVENTOS (src/publicador_evento.py) - INTERFACE + FORMATO VERSIONADO
+
+   PublicadorEventos virou interface; PublicadorArquivoJson é a
+   implementação. O evento ganhou estrutura versionada: eventType,
+   eventVersion, eventId, occurredAt, idOperacao, documentoId,
+   tipoDocumento, schemaVersion e referencia.
+
+   Os campos da v1.0.0 (evento, documento_id, id_operacao, caminho_pdf,
+   publicado_em) foram MANTIDOS na mensagem, para não quebrar os
+   consumidores atuais.
+
+   Nenhum barramento real (Kafka, RabbitMQ) foi implementado, conforme
+   combinado.
+
+l) ORQUESTRAÇÃO (src/processo.py) - REESCRITO
+
+   Continua sendo o único lugar que conhece a ORDEM do fluxo, e não
+   valida, formata, desenha PDF nem grava arquivo. Repositório e
+   publicador podem ser injetados, o que facilita teste e substituição.
+
+m) SWAGGER (src/api.py)
+
+   Cada bloco do contrato virou um componente com nome próprio no
+   OpenAPI (Cliente, Score, Decisao, OperacaoFinanceira...), em vez de um
+   único objeto embutido: quem integra abre bloco por bloco e vê campos,
+   tipos, enums, obrigatoriedade e as pendências.
+
+   Os exemplos passaram de 2 para 7, um por cenário. A descrição da API
+   ganhou a tabela de qual processo preenche qual bloco.
+
+n) EXEMPLOS (examples/) - 2 VIRARAM 7
+
+   operacao_valida (imobiliário PF), operacao_com_score,
+   operacao_com_decisao, operacao_completa (Esteira inteira, com
+   cronograma), operacao_credito_pj, legado_v1_plano e
+   operacao_invalida.
+
+   No exemplo completo o cronograma traz só 3 parcelas, identificadas
+   como recorte ilustrativo: inventar 240 parcelas seria inventar dado
+   de negócio.
+
+o) TESTES - DE 12 PARA 131
+
+   tests/test_contrato.py ......... 13 testes
+   tests/test_validacao.py ........ 60 testes
+   tests/test_compatibilidade.py .. 11 testes
+   tests/test_documento.py ........ 28 testes
+   tests/test_api.py .............. 19 testes
+   tests/apoio.py e conftest.py ... apoio compartilhado
+
+   Cobrem todos os cenários pedidos: CPF inválido, score fora de 0-1000,
+   enum inválido, data inválida, timestamp inválido, tipoPessoa
+   inválido, sistemaAmortizacao inválido, decisão inválida, campo
+   obrigatório ausente, arrays vazios permitidos, geração de PDF,
+   armazenamento, evento, consulta por documento_id, documento
+   inexistente, Swagger, OpenAPI e schema publicado.
+
+   Testes novos de maior valor: JSON inválido não gera PDF nem registro
+   nem evento; o identificador da operação não vira caminho de arquivo;
+   o contrato publicado no Swagger é idêntico ao usado na validação; o
+   arquivo consolidado está sincronizado com os módulos; e cronograma
+   longo gera PDF de várias páginas.
+
+p) DOCUMENTAÇÃO
+
+   Novos: docs/contrato-json.md, docs/integracao.md,
+   docs/fluxo-documental.md.
+   Reescritos: README.md e docs/arquitetura.md.
+   Corrigido no README um título duplicado ("## 4. Tecnologias" repetido).
+
+14.3. O QUE NÃO MUDOU
+
+- Os três endpoints são os mesmos: GET /api/saude,
+  POST /api/documentos e GET /api/documentos/{documento_id}.
+- A ordem do fluxo é a mesma: receber, validar, decidir, mapear, gerar
+  PDF, armazenar, publicar evento, responder.
+- A validação continua acontecendo ANTES do mapeamento e do PDF, e
+  entrada inválida continua devolvendo 400 com código DADOS_INVALIDOS
+  e uma lista de erros.
+- A entrada continua sendo validada por JSON Schema, e não por Pydantic:
+  se fosse por Pydantic, o FastAPI responderia 422 em outro formato e o
+  400 combinado com os outros grupos deixaria de existir.
+- O caminho público do contrato continua sendo
+  schemas/operacao_credito.schema.json.
+- O armazenamento continua local e a publicação de evento continua
+  simulada.
+- ReportLab continua sendo a biblioteca de geração de PDF.
+- Nenhuma dependência nova foi adicionada ao requirements.txt.
+
+14.4. TESTES EXISTENTES QUE PRECISARAM MUDAR, E POR QUÊ
+
+Dois testes da v1.1.0 foram alterados. Os dois estão registrados aqui
+porque a orientação era não quebrar teste sem motivo.
+
+1. test_openapi_usa_json_schema_do_contrato
+   Comparava o componente "OperacaoCredito" do Swagger com o arquivo do
+   contrato, campo a campo. Com o contrato dividido em blocos, publicar
+   tudo embutido num único objeto tornaria o Swagger ilegível justamente
+   para quem precisa dele - os outros grupos. Cada bloco passou a ser um
+   componente com nome próprio, o que muda as referências internas.
+   Substituído por test_openapi_publica_o_contrato_usado_na_validacao,
+   que é mais forte: compara TODOS os componentes publicados com os
+   gerados a partir de schemas/v1/, garantindo que Swagger e validação
+   leiam a mesma fonte.
+
+2. A verificação dos exemplos do Swagger
+   Exigia exatamente dois exemplos (operacao_valida e
+   operacao_invalida). Como a entrega pedia pelo menos cinco cenários, a
+   verificação passou a exigir que todos os exemplos declarados estejam
+   publicados, que os dois originais continuem presentes e que cada um
+   tenha summary e description.
+
+Nenhum outro teste da v1.1.0 foi alterado. Os que já existiam - saúde,
+POST válido, POST inválido, consulta, 404, /docs, /redoc, redirecionamento
+da raiz, lista de endpoints e respostas de erro - continuam como estavam.
+
+14.5. O QUE NÃO FOI FEITO, E POR QUÊ
+
+Nada abaixo foi inventado. Quando a informação não existia, a área
+arquitetural foi criada e a pendência, registrada.
+
+- Contratos dos Processos 1 (Promoções), 5 (Juros), 7 (Produtos) e 8
+  (Automotivo): não fornecidos. Blocos criados, abertos e sem campo
+  obrigatório.
+- Contrato final do Processo 9 (Decisão): parcial. O bloco exige apenas
+  "resultado".
+- Dados completos de PJ: não definidos. dadosPJ não exige nada.
+- Vocabulário da decisão: o grupo Financiamento de Imóveis informou
+  APROVADA/RECUSADA/ANALISE_MANUAL e o grupo Controle Financeiro
+  informou APROVADO. A divergência é real. Os quatro valores são aceitos
+  para não bloquear nenhum dos dois, e o alinhamento com o grupo Decisão
+  ficou registrado como pendência.
+- Unidade da taxa de juros: percentual no bloco financiamento (regra do
+  Processo 4) e decimal em operacaoFinanceira (regra do Processo 2). As
+  duas foram mantidas como cada grupo declarou, com a unidade escrita na
+  description de cada campo. Unificar depende de alinhamento.
+- Demais estados de operacaoFinanceira.status e cronograma[].status: só
+  ATIVA e PENDENTE foram informados. Só esses estão nos enums.
+- Escala de probabilidadeDefault e de comprometimentoRenda: não se sabe
+  se é 0-1 ou 0-100. Apenas o piso 0 é validado.
+- Estrutura de score.fatoresImpacto[]: não informada. A lista é exigida,
+  os itens não são validados.
+- Matrícula do imóvel: não implementada pelo grupo Financiamento de
+  Imóveis. Não existe no contrato.
+- MongoDB e barramento real: fora do escopo desta etapa. Só as
+  interfaces foram preparadas.
+- Templates de crédito PJ e de automotivo: não criados, porque os dados
+  não existem. Os dois usam o template genérico.
+
+14.6. COMO VERIFICAR
+
+1. pip install -r requirements.txt
+2. pytest                                  (131 testes devem passar)
+3. python -m scripts.gerar_bundle_schema   (não deve mudar nada)
+4. python -m scripts.exportar_openapi
+5. uvicorn src.api:app --reload
+6. Abrir http://127.0.0.1:8000/docs
+7. Em POST /api/documentos > Try it out, executar os exemplos 1 a 6
+   (todos devem devolver 201) e o exemplo 7 (deve devolver 400, com a
+   lista de erros e sem gerar PDF em storage/pdfs/).
+8. Copiar o documento_id de um 201 e consultar em
+   GET /api/documentos/{documento_id}.

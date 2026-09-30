@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "1.2.0",
+  "correlacao": {
+    "idOperacao": "OP-2026-000300",
+    "idCliente": "CLI-EXEMPLO-0003",
+    "idProposta": "PROP-EXEMPLO-0003"
+  },
+  "documento": {
+    "tipoDocumento": "PROPOSTA_CREDITO",
+    "titulo": "Proposta de Financiamento Imobiliário — Resultado da Análise",
+    "observacoes": "Documento de exemplo. O bloco decisao usa o vocabulario informado pelo grupo Financiamento de Imoveis (APROVADA); o contrato final do processo Decisao ainda depende de alinhamento."
+  },
+  "cliente": {
+    "tipoPessoa": "PF",
+    "dadosPF": {
+      "nomeCompleto": "Cliente Exemplo com Decisão",
+      "cpf": "12345678903",
+      "dataNascimento": "1985-11-02",
+      "idade": 40,
+      "estadoCivil": "CASADO",
+      "numeroDependentes": 1
+    },
+    "contato": {
+      "email": "cliente.decisao@example.com"
+    },
+    "endereco": {
+      "logradouro": "Rua do Exemplo Aprovado",
+      "numero": "45",
+      "bairro": "Boa Viagem",
+      "cidade": "Recife",
+      "estado": "PE",
+      "cep": "51000000"
+    }
+  },
+  "cadastro": {
+    "rendaMensal": 15000.00,
+    "dividaTotal": 8000.00,
+    "diasAtrasoUltimos12Meses": 0,
+    "mesesNoEmpregoAtual": 120,
+    "mesesRelacionamentoBanco": 144
+  },
+  "produtoFinanceiro": {
+    "categoria": "FINANCIAMENTO_IMOVEL"
+  },
+  "financiamento": {
+    "tipo": "IMOBILIARIO",
+    "imobiliario": {
+      "tipoImovel": "APARTAMENTO",
+      "cidade": "Recife",
+      "estado": "PE",
+      "valorImovel": 700000.00,
+      "valorEntrada": 200000.00,
+      "valorFinanciado": 500000.00,
+      "prazoMeses": 240,
+      "taxaJurosMensal": 0.92,
+      "sistemaAmortizacao": "SAC"
+    }
+  },
+  "score": {
+    "scoreFinal": 905,
+    "faixaRisco": "EXCELENTE",
+    "probabilidadeDefault": 0.012,
+    "modelo": {
+      "codigo": "SCORE_PF",
+      "versao": "v1.1.0"
+    },
+    "calculatedAt": "2026-09-25T18:20:00Z",
+    "origem": "BANCO",
+    "componentes": [],
+    "fatoresImpacto": []
+  },
+  "juros": {
+    "taxaMensal": 0.0092,
+    "sistemaAmortizacao": "SAC",
+    "calculadoEm": "2026-09-25T18:22:00Z"
+  },
+  "decisao": {
+    "resultado": "APROVADA",
+    "motivos": [
+      "Score dentro da faixa EXCELENTE",
+      "Comprometimento de renda dentro do limite da politica"
+    ],
+    "versaoPolitica": "POL-2026.09",
+    "dataAprovacao": "2026-09-25",
+    "valorAprovado": 500000.00,
+    "decididoEm": "2026-09-25T18:25:00Z"
+  },
+  "metadados": {
+    "origem": "DECISAO",
+    "criadoEm": "2026-09-25T18:15:00Z",
+    "atualizadoEm": "2026-09-25T18:25:00Z",
+    "processosParticipantes": [
+      "FINANCIAMENTO_IMOVEIS",
+      "CREDITO_PF_PJ",
+      "SCORE",
+      "CALCULO_JUROS",
+      "DECISAO"
+    ]
+  }
+}

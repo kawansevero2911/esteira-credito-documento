@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/comuns.schema.json",
+  "title": "TiposComuns",
+  "description": "Tipos reutilizados pelos blocos do contrato canonico da Esteira de Credito. Nao e um contrato de entrada: existe apenas para ser referenciado pelos outros modulos.",
+  "$defs": {
+    "valorMonetario": {
+      "title": "ValorMonetario",
+      "description": "Valor em reais, nao negativo, com no maximo 2 casas decimais. Regra informada pelo grupo Controle Financeiro de Operacoes. A palavra-chave x-casasDecimais e uma extensao deste projeto (ver docs/contrato-json.md): validadores de outras linguagens a ignoram, portanto o limite de casas decimais deve ser respeitado pelo emissor.",
+      "type": "number",
+      "minimum": 0,
+      "x-casasDecimais": 2
+    },
+    "taxaDecimal": {
+      "title": "TaxaDecimal",
+      "description": "Taxa expressa em forma decimal com no maximo 6 casas (0.0199 = 1,99% ao mes). Unidade e precisao informadas pelo grupo Controle Financeiro de Operacoes.",
+      "type": "number",
+      "minimum": 0,
+      "x-casasDecimais": 6
+    },
+    "taxaPercentualMensal": {
+      "title": "TaxaPercentualMensal",
+      "description": "Taxa de juros expressa em percentual mensal (1.35 = 1,35% ao mes). Unidade informada pelo grupo Financiamento de Imoveis. ATENCAO: difere de taxaDecimal, usada pelo Controle Financeiro. A unificacao das duas unidades depende de alinhamento entre os grupos.",
+      "type": "number",
+      "minimum": 0
+    },
+    "prazoMeses": {
+      "title": "PrazoMeses",
+      "description": "Prazo em meses. Inteiro positivo, conforme regra do grupo Financiamento de Imoveis.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "cpf": {
+      "title": "CPF",
+      "description": "CPF com exatamente 11 digitos, sem pontuacao. Regra informada pelo grupo Financiamento de Imoveis. O emissor deve remover pontos e tracos antes de enviar.",
+      "type": "string",
+      "pattern": "^[0-9]{11}$"
+    },
+    "cnpj": {
+      "title": "CNPJ",
+      "description": "CNPJ com exatamente 14 digitos, sem pontuacao. Formato adotado por simetria com o CPF; o contrato de PJ ainda depende de alinhamento com o grupo Credito PF e PJ.",
+      "type": "string",
+      "pattern": "^[0-9]{14}$"
+    },
+    "data": {
+      "title": "Data",
+      "description": "Data no formato YYYY-MM-DD, conforme regra do grupo Controle Financeiro de Operacoes. O pattern garante o formato e a palavra-chave format garante que a data existe no calendario.",
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "timestampUtc": {
+      "title": "TimestampUtc",
+      "description": "Data e hora em ISO-8601 UTC, conforme regra dos grupos Score e Controle Financeiro de Operacoes. Aceita o sufixo Z ou +00:00; outros deslocamentos de fuso nao sao aceitos.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|\\+00:00)$"
+    },
+    "uuid": {
+      "title": "Uuid",
+      "description": "Identificador no formato UUID.",
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "identificador": {
+      "title": "Identificador",
+      "description": "Identificador textual livre. Usado quando o formato do identificador ainda nao foi padronizado entre os grupos.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "tipoPessoa": {
+      "title": "TipoPessoa",
+      "description": "Natureza do cliente. Valores informados pelos grupos Score e Controle Financeiro de Operacoes.",
+      "type": "string",
+      "enum": ["PF", "PJ"]
+    },
+    "sistemaAmortizacao": {
+      "title": "SistemaAmortizacao",
+      "description": "Sistema de amortizacao. Valores informados pelos grupos Financiamento de Imoveis e Controle Financeiro de Operacoes.",
+      "type": "string",
+      "enum": ["SAC", "PRICE"]
+    },
+    "processoEsteira": {
+      "title": "ProcessoEsteira",
+      "description": "Identificacao de um dos 10 processos da Esteira de Credito.",
+      "type": "string",
+      "enum": [
+        "PROMOCOES_ACOES_CREDITO",
+        "CONTROLE_FINANCEIRO_OPERACOES",
+        "CREDITO_PF_PJ",
+        "FINANCIAMENTO_IMOVEIS",
+        "CALCULO_JUROS",
+        "ESTRUTURACAO_DOCUMENTOS",
+        "PRODUTOS_FINANCEIROS",
+        "FINANCIAMENTO_AUTOMOTIVO",
+        "DECISAO",
+        "SCORE"
+      ]
+    }
+  }
+}

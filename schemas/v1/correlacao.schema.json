@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/correlacao.schema.json",
+  "title": "Correlacao",
+  "description": "Identificadores que permitem rastrear a MESMA operacao ao longo de toda a Esteira de Credito (Score, Decisao, Juros, Financiamento, Controle Financeiro e Documentacao). Cada processo pode manter o seu proprio identificador interno no seu bloco; idOperacao e o identificador de correlacao comum a todos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["idOperacao"],
+  "properties": {
+    "idOperacao": {
+      "$ref": "comuns.schema.json#/$defs/identificador",
+      "description": "Identificador de correlacao da operacao, comum a todos os processos. Unico campo obrigatorio do bloco. O formato nao foi padronizado entre os grupos, portanto e aceito como texto livre."
+    },
+    "idCliente": {
+      "$ref": "comuns.schema.json#/$defs/identificador",
+      "description": "Identificador do cliente. Corresponde ao clienteId enviado pelo grupo Score."
+    },
+    "idProposta": {
+      "$ref": "comuns.schema.json#/$defs/identificador",
+      "description": "Identificador da proposta. Corresponde ao ID da proposta gerado pelo grupo Financiamento de Imoveis."
+    },
+    "idDocumento": {
+      "$ref": "comuns.schema.json#/$defs/identificador",
+      "description": "Identificador do documento, quando o emissor ja possui um. Se ausente, o Processo 6 gera o identificador e o devolve na resposta e no evento documento.gerado."
+    }
+  }
+}

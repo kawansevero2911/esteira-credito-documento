@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/promocao.schema.json",
+  "title": "Promocao",
+  "description": "Informacoes de promocoes e acoes de credito aplicadas a operacao, de responsabilidade do Processo 1 (Promocoes e Acoes de Credito). PENDENCIA: o contrato deste processo ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural, aceita propriedades adicionais e nao declara nenhum campo obrigatorio. Nenhum campo foi inventado porque nao ha requisito que os sustente.",
+  "type": "object",
+  "additionalProperties": true
+}

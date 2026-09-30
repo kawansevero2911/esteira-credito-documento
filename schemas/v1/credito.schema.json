@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/credito.schema.json",
+  "title": "Credito",
+  "description": "Solicitacao de credito PF/PJ, de responsabilidade do Processo 3 (Credito PF e PJ). PENDENCIA: o contrato deste processo ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural, aceita propriedades adicionais e nao declara nenhum campo obrigatorio. Os dados de identificacao do cliente ficam no bloco cliente, e o perfil financeiro no bloco cadastro, para nao duplicar informacao.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "valorSolicitado": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Valor de credito solicitado. Campo declarado por ser o minimo necessario para representar uma solicitacao de credito no documento; permanece OPCIONAL enquanto o contrato do Processo 3 nao for definido."
+    },
+    "prazoMeses": {
+      "$ref": "comuns.schema.json#/$defs/prazoMeses",
+      "description": "Prazo solicitado em meses. Permanece OPCIONAL enquanto o contrato do Processo 3 nao for definido."
+    },
+    "taxaJurosMensalPercentual": {
+      "$ref": "comuns.schema.json#/$defs/taxaPercentualMensal",
+      "description": "Taxa de juros em percentual mensal (1.35 = 1,35% ao mes). Campo herdado do taxa_juros_mensal do contrato v1.0.0 deste projeto, para onde as mensagens no formato antigo sao convertidas. Nao foi inventado: existe no codigo atual. Permanece OPCIONAL enquanto o contrato do Processo 3 nao for definido."
+    },
+    "finalidade": {
+      "description": "Finalidade do credito. Texto livre enquanto o contrato do Processo 3 nao for definido.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    }
+  }
+}

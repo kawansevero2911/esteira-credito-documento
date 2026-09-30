@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/cliente.schema.json",
+  "title": "Cliente",
+  "description": "Identificacao do cliente da operacao. Bloco preenchido pelo Processo 3 (Credito PF e PJ) e reaproveitado pelos demais processos. Separa o que e comum (tipoPessoa, contato, endereco) do que e especifico de pessoa fisica (dadosPF) e de pessoa juridica (dadosPJ). As exigencias de cada tipo de pessoa sao aplicadas no schema raiz, em if/then.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tipoPessoa"],
+  "properties": {
+    "tipoPessoa": {
+      "$ref": "comuns.schema.json#/$defs/tipoPessoa",
+      "description": "Natureza do cliente. Determina qual bloco de dados especificos e exigido (dadosPF ou dadosPJ)."
+    },
+    "dadosPF": {
+      "title": "ClienteDadosPF",
+      "description": "Dados de pessoa fisica. Campos baseados nas entradas informadas pelos grupos Financiamento de Imoveis e Score.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nomeCompleto": {
+          "description": "Nome completo do cliente. Obrigatorio para PF.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "cpf": {
+          "$ref": "comuns.schema.json#/$defs/cpf",
+          "description": "CPF do cliente, 11 digitos sem pontuacao. Obrigatorio para PF."
+        },
+        "dataNascimento": {
+          "$ref": "comuns.schema.json#/$defs/data",
+          "description": "Data de nascimento. Obrigatoria em financiamento imobiliario (exigencia do grupo Financiamento de Imoveis)."
+        },
+        "idade": {
+          "description": "Idade em anos. Enviada pelo grupo Score como entrada do calculo. Mantida como campo proprio porque o Score a transmite explicitamente, em vez de deriva-la de dataNascimento.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 130
+        },
+        "estadoCivil": {
+          "description": "Estado civil. Enviado pelo grupo Score como entrada do calculo. A lista de valores aceitos ainda nao foi definida pelo grupo, portanto e aceito como texto livre.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "numeroDependentes": {
+          "description": "Numero de dependentes. Enviado pelo grupo Score como entrada do calculo.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "dadosPJ": {
+      "title": "ClienteDadosPJ",
+      "description": "Dados de pessoa juridica. PENDENCIA: o contrato completo de PJ ainda depende de alinhamento com o grupo Credito PF e PJ. Por isso o bloco aceita propriedades adicionais e nao declara nenhum campo obrigatorio.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "razaoSocial": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "nomeFantasia": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "cnpj": {
+          "$ref": "comuns.schema.json#/$defs/cnpj"
+        }
+      }
+    },
+    "contato": {
+      "title": "ClienteContato",
+      "description": "Dados de contato. Declarados como OPCIONAIS pelo grupo Financiamento de Imoveis.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "telefone": {
+          "description": "Telefone do cliente. O formato nao foi padronizado entre os grupos, portanto e aceito como texto livre.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "email": {
+          "description": "E-mail do cliente.",
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 200
+        }
+      }
+    },
+    "endereco": {
+      "title": "ClienteEndereco",
+      "description": "Endereco do CLIENTE. Nao confundir com a localizacao do imovel, que fica em financiamento.imobiliario.cidade e financiamento.imobiliario.estado.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "logradouro": {
+          "description": "Logradouro do cliente. Corresponde ao campo endereco exigido pelo grupo Financiamento de Imoveis.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "numero": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "complemento": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bairro": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "cidade": {
+          "description": "Cidade do cliente. Obrigatoria em financiamento imobiliario.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "estado": {
+          "description": "Unidade federativa com 2 letras maiusculas.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "cep": {
+          "description": "CEP com 8 digitos, sem pontuacao.",
+          "type": "string",
+          "pattern": "^[0-9]{8}$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/documento.schema.json",
+  "title": "Documento",
+  "description": "Bloco do Processo 6 (Estruturacao de Documentos Nao Relacionais). Na ENTRADA descreve qual documento deve ser emitido. As informacoes do documento JA GERADO (identificador, caminho, hash, status) nao ficam aqui: sao devolvidas na resposta HTTP, gravadas no repositorio de metadados e publicadas no evento documento.gerado, e podem ser reenviadas em correlacao.idDocumento.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tipoDocumento"],
+  "properties": {
+    "tipoDocumento": {
+      "title": "TipoDocumento",
+      "description": "Tipo de documento a emitir. Hoje o Processo 6 emite apenas a proposta da operacao de credito, que e o documento implementado no projeto. Novos tipos (contrato, termo de quitacao, etc.) serao adicionados ao enum quando definidos.",
+      "type": "string",
+      "enum": ["PROPOSTA_CREDITO"]
+    },
+    "titulo": {
+      "description": "Titulo a ser impresso no documento. Se ausente, o Processo 6 usa o titulo padrao do template.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "observacoes": {
+      "description": "Observacoes livres a serem impressas no documento.",
+      "type": "string",
+      "maxLength": 2000
+    }
+  }
+}

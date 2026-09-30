@@ -1,27 +1,1151 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://esteira-credito.local/schemas/operacao_credito.schema.json",
+  "$id": "https://esteira-credito.local/schemas/v1/operacao_credito.schema.json",
   "title": "OperacaoCredito",
+  "description": "CONTRATO CANONICO DA ESTEIRA DE CREDITO, versao 1.2.0.\n\nEste e o contrato unico de comunicacao entre os 10 processos da Esteira. Cada processo preenche apenas os blocos que sao da sua responsabilidade; nenhum processo e obrigado a enviar campos que nao lhe pertencem. O Processo 6 (Estruturacao de Documentos Nao Relacionais) recebe este JSON, valida, mapeia para um modelo documental, gera o PDF, armazena os metadados e publica o evento documento.gerado.\n\nRESPONSAVEL POR CADA BLOCO:\n- correlacao: identificadores de rastreio, comuns a todos os processos\n- documento: Processo 6 (Estruturacao de Documentos)\n- cliente: Processo 3 (Credito PF e PJ)\n- cadastro: Processo 3, usado como entrada pelo Processo 10\n- promocao: Processo 1 (Promocoes e Acoes de Credito) - contrato nao definido\n- credito: Processo 3 (Credito PF e PJ) - contrato nao definido\n- produtoFinanceiro: Processo 7 (Produtos Financeiros) - contrato nao definido\n- financiamento: Processo 4 (Imoveis) e Processo 8 (Automotivo)\n- score: Processo 10 (Score)\n- juros: Processo 5 (Calculo de Juros) - contrato nao definido\n- decisao: Processo 9 (Decisao) - contrato final nao definido\n- operacaoFinanceira: Processo 2 (Controle Financeiro de Operacoes)\n- metadados: rastreabilidade, comum a todos os processos\n\nO Processo 6 NAO recalcula score, juros, decisao ou risco: esses resultados sao recebidos dos processos responsaveis.\n\nCompatibilidade: a API tambem aceita o formato plano da versao 1.0.0 deste projeto (id_operacao, tipo_produto, cliente, valor, prazo_meses, taxa_juros_mensal). Esse formato e convertido para este contrato antes da validacao. Ver docs/contrato-json.md.",
+  "x-versaoContrato": "1.2.0",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id_operacao", "tipo_produto", "cliente", "valor", "prazo_meses", "taxa_juros_mensal"],
+  "required": [
+    "schemaVersion",
+    "correlacao",
+    "documento",
+    "cliente"
+  ],
   "properties": {
-    "id_operacao": {"type": "string", "minLength": 1},
-    "tipo_produto": {
+    "schemaVersion": {
+      "description": "Versao do contrato canonico usada nesta mensagem. A linha 1.x e compativel entre si: versoes menores apenas acrescentam campos opcionais ou novos valores de enum. Uma mudanca incompativel criara a pasta schemas/v2 e passara a exigir a linha 2.x.",
       "type": "string",
-      "enum": ["financiamento_imovel", "financiamento_automovel", "credito_pessoal"]
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$"
+    },
+    "correlacao": {
+      "$ref": "#/$defs/correlacao"
+    },
+    "documento": {
+      "$ref": "#/$defs/documento"
     },
     "cliente": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["nome", "documento"],
-      "properties": {
-        "nome": {"type": "string", "minLength": 1},
-        "documento": {"type": "string", "minLength": 1}
+      "$ref": "#/$defs/cliente"
+    },
+    "cadastro": {
+      "$ref": "#/$defs/cadastro"
+    },
+    "promocao": {
+      "$ref": "#/$defs/promocao"
+    },
+    "credito": {
+      "$ref": "#/$defs/credito"
+    },
+    "produtoFinanceiro": {
+      "$ref": "#/$defs/produto_financeiro"
+    },
+    "financiamento": {
+      "$ref": "#/$defs/financiamento"
+    },
+    "score": {
+      "$ref": "#/$defs/score"
+    },
+    "juros": {
+      "$ref": "#/$defs/juros"
+    },
+    "decisao": {
+      "$ref": "#/$defs/decisao"
+    },
+    "operacaoFinanceira": {
+      "$ref": "#/$defs/operacao_financeira"
+    },
+    "metadados": {
+      "$ref": "#/$defs/metadados"
+    }
+  },
+  "allOf": [
+    {
+      "title": "RegraPessoaFisica",
+      "description": "Quando o cliente e pessoa fisica, o bloco dadosPF e exigido com nome completo e CPF. Equivale aos campos nome e documento exigidos pelo contrato v1.0.0 deste projeto e ao nome e CPF exigidos pelo grupo Financiamento de Imoveis.",
+      "if": {
+        "required": [
+          "cliente"
+        ],
+        "properties": {
+          "cliente": {
+            "required": [
+              "tipoPessoa"
+            ],
+            "properties": {
+              "tipoPessoa": {
+                "const": "PF"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "cliente": {
+            "required": [
+              "dadosPF"
+            ],
+            "properties": {
+              "dadosPF": {
+                "required": [
+                  "nomeCompleto",
+                  "cpf"
+                ]
+              }
+            }
+          }
+        }
       }
     },
-    "valor": {"type": "number", "minimum": 0},
-    "prazo_meses": {"type": "integer", "minimum": 1},
-    "taxa_juros_mensal": {"type": "number", "minimum": 0}
+    {
+      "title": "RegraPessoaJuridica",
+      "description": "Quando o cliente e pessoa juridica, o bloco dadosPJ e exigido. NENHUM campo interno e exigido: o contrato completo de PJ ainda depende de alinhamento com o grupo Credito PF e PJ, e exigir campos aqui seria inventar requisito.",
+      "if": {
+        "required": [
+          "cliente"
+        ],
+        "properties": {
+          "cliente": {
+            "required": [
+              "tipoPessoa"
+            ],
+            "properties": {
+              "tipoPessoa": {
+                "const": "PJ"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "cliente": {
+            "required": [
+              "dadosPJ"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraFinanciamentoImobiliario",
+      "description": "Quando o financiamento e imobiliario, valem as exigencias declaradas pelo grupo Financiamento de Imoveis: o sub-bloco imobiliario, a renda mensal e o endereco do cliente com logradouro e cidade. Dados automotivos NAO sao exigidos.",
+      "if": {
+        "required": [
+          "financiamento"
+        ],
+        "properties": {
+          "financiamento": {
+            "required": [
+              "tipo"
+            ],
+            "properties": {
+              "tipo": {
+                "const": "IMOBILIARIO"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "cadastro"
+        ],
+        "properties": {
+          "financiamento": {
+            "required": [
+              "imobiliario"
+            ]
+          },
+          "cadastro": {
+            "required": [
+              "rendaMensal"
+            ]
+          },
+          "cliente": {
+            "required": [
+              "endereco"
+            ],
+            "properties": {
+              "endereco": {
+                "required": [
+                  "logradouro",
+                  "cidade"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraFinanciamentoImobiliarioPessoaFisica",
+      "description": "A data de nascimento e exigida pelo grupo Financiamento de Imoveis. A exigencia se aplica somente a pessoa fisica em operacao imobiliaria, porque o grupo descreveu apenas o fluxo de PF.",
+      "if": {
+        "allOf": [
+          {
+            "required": [
+              "financiamento"
+            ],
+            "properties": {
+              "financiamento": {
+                "required": [
+                  "tipo"
+                ],
+                "properties": {
+                  "tipo": {
+                    "const": "IMOBILIARIO"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "required": [
+              "cliente"
+            ],
+            "properties": {
+              "cliente": {
+                "required": [
+                  "tipoPessoa"
+                ],
+                "properties": {
+                  "tipoPessoa": {
+                    "const": "PF"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "cliente": {
+            "properties": {
+              "dadosPF": {
+                "required": [
+                  "dataNascimento"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraFinanciamentoAutomotivo",
+      "description": "Quando o financiamento e automotivo, o sub-bloco automotivo e exigido, mas NENHUM campo interno e exigido: o contrato do Processo 8 ainda nao foi fornecido. Dados imobiliarios NAO sao exigidos.",
+      "if": {
+        "required": [
+          "financiamento"
+        ],
+        "properties": {
+          "financiamento": {
+            "required": [
+              "tipo"
+            ],
+            "properties": {
+              "tipo": {
+                "const": "AUTOMOTIVO"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "financiamento": {
+            "required": [
+              "automotivo"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraCoerenciaModeloScore",
+      "description": "O codigo do modelo de score deve ser coerente com o tipo de pessoa: SCORE_PF para pessoa fisica e SCORE_PJ para pessoa juridica. Os dois codigos e os dois tipos de pessoa foram informados pelo grupo Score, e a correspondencia entre eles e o unico pareamento possivel entre os valores declarados.",
+      "if": {
+        "required": [
+          "score",
+          "cliente"
+        ],
+        "properties": {
+          "cliente": {
+            "required": [
+              "tipoPessoa"
+            ],
+            "properties": {
+              "tipoPessoa": {
+                "const": "PF"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "score": {
+            "properties": {
+              "modelo": {
+                "properties": {
+                  "codigo": {
+                    "const": "SCORE_PF"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "cadastro": {
+      "title": "Cadastro",
+      "description": "Perfil financeiro e comportamental do cliente. Reune as ENTRADAS que o grupo Score declarou utilizar no calculo, alem da renda exigida pelo grupo Financiamento de Imoveis. Os atributos pessoais (idade, estado civil, numero de dependentes) ficam em cliente.dadosPF, para que a mesma informacao nao exista em dois blocos. O RESULTADO do calculo fica no bloco score.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rendaMensal": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Renda mensal do cliente. Obrigatoria em financiamento imobiliario (exigencia do grupo Financiamento de Imoveis) e usada como entrada pelo grupo Score."
+        },
+        "dividaTotal": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Divida total do cliente. Entrada do calculo do grupo Score."
+        },
+        "diasAtrasoUltimos12Meses": {
+          "description": "Dias de atraso acumulados nos ultimos 12 meses. Entrada do calculo do grupo Score.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "limiteRotativoUtilizado": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Valor do limite rotativo em uso. Entrada do calculo do grupo Score."
+        },
+        "limiteRotativoTotal": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Valor total do limite rotativo disponibilizado. Entrada do calculo do grupo Score."
+        },
+        "mesesNoEmpregoAtual": {
+          "description": "Tempo no emprego atual, em meses. Entrada do calculo do grupo Score.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "mesesRelacionamentoBanco": {
+          "description": "Tempo de relacionamento com o banco, em meses. Entrada do calculo do grupo Score.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cliente": {
+      "title": "Cliente",
+      "description": "Identificacao do cliente da operacao. Bloco preenchido pelo Processo 3 (Credito PF e PJ) e reaproveitado pelos demais processos. Separa o que e comum (tipoPessoa, contato, endereco) do que e especifico de pessoa fisica (dadosPF) e de pessoa juridica (dadosPJ). As exigencias de cada tipo de pessoa sao aplicadas no schema raiz, em if/then.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tipoPessoa"
+      ],
+      "properties": {
+        "tipoPessoa": {
+          "$ref": "#/$defs/comuns/$defs/tipoPessoa",
+          "description": "Natureza do cliente. Determina qual bloco de dados especificos e exigido (dadosPF ou dadosPJ)."
+        },
+        "dadosPF": {
+          "title": "ClienteDadosPF",
+          "description": "Dados de pessoa fisica. Campos baseados nas entradas informadas pelos grupos Financiamento de Imoveis e Score.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nomeCompleto": {
+              "description": "Nome completo do cliente. Obrigatorio para PF.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "cpf": {
+              "$ref": "#/$defs/comuns/$defs/cpf",
+              "description": "CPF do cliente, 11 digitos sem pontuacao. Obrigatorio para PF."
+            },
+            "dataNascimento": {
+              "$ref": "#/$defs/comuns/$defs/data",
+              "description": "Data de nascimento. Obrigatoria em financiamento imobiliario (exigencia do grupo Financiamento de Imoveis)."
+            },
+            "idade": {
+              "description": "Idade em anos. Enviada pelo grupo Score como entrada do calculo. Mantida como campo proprio porque o Score a transmite explicitamente, em vez de deriva-la de dataNascimento.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 130
+            },
+            "estadoCivil": {
+              "description": "Estado civil. Enviado pelo grupo Score como entrada do calculo. A lista de valores aceitos ainda nao foi definida pelo grupo, portanto e aceito como texto livre.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "numeroDependentes": {
+              "description": "Numero de dependentes. Enviado pelo grupo Score como entrada do calculo.",
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "dadosPJ": {
+          "title": "ClienteDadosPJ",
+          "description": "Dados de pessoa juridica. PENDENCIA: o contrato completo de PJ ainda depende de alinhamento com o grupo Credito PF e PJ. Por isso o bloco aceita propriedades adicionais e nao declara nenhum campo obrigatorio.",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "razaoSocial": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "nomeFantasia": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "cnpj": {
+              "$ref": "#/$defs/comuns/$defs/cnpj"
+            }
+          }
+        },
+        "contato": {
+          "title": "ClienteContato",
+          "description": "Dados de contato. Declarados como OPCIONAIS pelo grupo Financiamento de Imoveis.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "telefone": {
+              "description": "Telefone do cliente. O formato nao foi padronizado entre os grupos, portanto e aceito como texto livre.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "email": {
+              "description": "E-mail do cliente.",
+              "type": "string",
+              "format": "email",
+              "minLength": 3,
+              "maxLength": 200
+            }
+          }
+        },
+        "endereco": {
+          "title": "ClienteEndereco",
+          "description": "Endereco do CLIENTE. Nao confundir com a localizacao do imovel, que fica em financiamento.imobiliario.cidade e financiamento.imobiliario.estado.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "logradouro": {
+              "description": "Logradouro do cliente. Corresponde ao campo endereco exigido pelo grupo Financiamento de Imoveis.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "numero": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20
+            },
+            "complemento": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "bairro": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "cidade": {
+              "description": "Cidade do cliente. Obrigatoria em financiamento imobiliario.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "estado": {
+              "description": "Unidade federativa com 2 letras maiusculas.",
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            "cep": {
+              "description": "CEP com 8 digitos, sem pontuacao.",
+              "type": "string",
+              "pattern": "^[0-9]{8}$"
+            }
+          }
+        }
+      }
+    },
+    "comuns": {
+      "title": "TiposComuns",
+      "description": "Tipos reutilizados pelos blocos do contrato canonico da Esteira de Credito. Nao e um contrato de entrada: existe apenas para ser referenciado pelos outros modulos.",
+      "$defs": {
+        "valorMonetario": {
+          "title": "ValorMonetario",
+          "description": "Valor em reais, nao negativo, com no maximo 2 casas decimais. Regra informada pelo grupo Controle Financeiro de Operacoes. A palavra-chave x-casasDecimais e uma extensao deste projeto (ver docs/contrato-json.md): validadores de outras linguagens a ignoram, portanto o limite de casas decimais deve ser respeitado pelo emissor.",
+          "type": "number",
+          "minimum": 0,
+          "x-casasDecimais": 2
+        },
+        "taxaDecimal": {
+          "title": "TaxaDecimal",
+          "description": "Taxa expressa em forma decimal com no maximo 6 casas (0.0199 = 1,99% ao mes). Unidade e precisao informadas pelo grupo Controle Financeiro de Operacoes.",
+          "type": "number",
+          "minimum": 0,
+          "x-casasDecimais": 6
+        },
+        "taxaPercentualMensal": {
+          "title": "TaxaPercentualMensal",
+          "description": "Taxa de juros expressa em percentual mensal (1.35 = 1,35% ao mes). Unidade informada pelo grupo Financiamento de Imoveis. ATENCAO: difere de taxaDecimal, usada pelo Controle Financeiro. A unificacao das duas unidades depende de alinhamento entre os grupos.",
+          "type": "number",
+          "minimum": 0
+        },
+        "prazoMeses": {
+          "title": "PrazoMeses",
+          "description": "Prazo em meses. Inteiro positivo, conforme regra do grupo Financiamento de Imoveis.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "cpf": {
+          "title": "CPF",
+          "description": "CPF com exatamente 11 digitos, sem pontuacao. Regra informada pelo grupo Financiamento de Imoveis. O emissor deve remover pontos e tracos antes de enviar.",
+          "type": "string",
+          "pattern": "^[0-9]{11}$"
+        },
+        "cnpj": {
+          "title": "CNPJ",
+          "description": "CNPJ com exatamente 14 digitos, sem pontuacao. Formato adotado por simetria com o CPF; o contrato de PJ ainda depende de alinhamento com o grupo Credito PF e PJ.",
+          "type": "string",
+          "pattern": "^[0-9]{14}$"
+        },
+        "data": {
+          "title": "Data",
+          "description": "Data no formato YYYY-MM-DD, conforme regra do grupo Controle Financeiro de Operacoes. O pattern garante o formato e a palavra-chave format garante que a data existe no calendario.",
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "timestampUtc": {
+          "title": "TimestampUtc",
+          "description": "Data e hora em ISO-8601 UTC, conforme regra dos grupos Score e Controle Financeiro de Operacoes. Aceita o sufixo Z ou +00:00; outros deslocamentos de fuso nao sao aceitos.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|\\+00:00)$"
+        },
+        "uuid": {
+          "title": "Uuid",
+          "description": "Identificador no formato UUID.",
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "identificador": {
+          "title": "Identificador",
+          "description": "Identificador textual livre. Usado quando o formato do identificador ainda nao foi padronizado entre os grupos.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "tipoPessoa": {
+          "title": "TipoPessoa",
+          "description": "Natureza do cliente. Valores informados pelos grupos Score e Controle Financeiro de Operacoes.",
+          "type": "string",
+          "enum": [
+            "PF",
+            "PJ"
+          ]
+        },
+        "sistemaAmortizacao": {
+          "title": "SistemaAmortizacao",
+          "description": "Sistema de amortizacao. Valores informados pelos grupos Financiamento de Imoveis e Controle Financeiro de Operacoes.",
+          "type": "string",
+          "enum": [
+            "SAC",
+            "PRICE"
+          ]
+        },
+        "processoEsteira": {
+          "title": "ProcessoEsteira",
+          "description": "Identificacao de um dos 10 processos da Esteira de Credito.",
+          "type": "string",
+          "enum": [
+            "PROMOCOES_ACOES_CREDITO",
+            "CONTROLE_FINANCEIRO_OPERACOES",
+            "CREDITO_PF_PJ",
+            "FINANCIAMENTO_IMOVEIS",
+            "CALCULO_JUROS",
+            "ESTRUTURACAO_DOCUMENTOS",
+            "PRODUTOS_FINANCEIROS",
+            "FINANCIAMENTO_AUTOMOTIVO",
+            "DECISAO",
+            "SCORE"
+          ]
+        }
+      }
+    },
+    "correlacao": {
+      "title": "Correlacao",
+      "description": "Identificadores que permitem rastrear a MESMA operacao ao longo de toda a Esteira de Credito (Score, Decisao, Juros, Financiamento, Controle Financeiro e Documentacao). Cada processo pode manter o seu proprio identificador interno no seu bloco; idOperacao e o identificador de correlacao comum a todos.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "idOperacao"
+      ],
+      "properties": {
+        "idOperacao": {
+          "$ref": "#/$defs/comuns/$defs/identificador",
+          "description": "Identificador de correlacao da operacao, comum a todos os processos. Unico campo obrigatorio do bloco. O formato nao foi padronizado entre os grupos, portanto e aceito como texto livre."
+        },
+        "idCliente": {
+          "$ref": "#/$defs/comuns/$defs/identificador",
+          "description": "Identificador do cliente. Corresponde ao clienteId enviado pelo grupo Score."
+        },
+        "idProposta": {
+          "$ref": "#/$defs/comuns/$defs/identificador",
+          "description": "Identificador da proposta. Corresponde ao ID da proposta gerado pelo grupo Financiamento de Imoveis."
+        },
+        "idDocumento": {
+          "$ref": "#/$defs/comuns/$defs/identificador",
+          "description": "Identificador do documento, quando o emissor ja possui um. Se ausente, o Processo 6 gera o identificador e o devolve na resposta e no evento documento.gerado."
+        }
+      }
+    },
+    "credito": {
+      "title": "Credito",
+      "description": "Solicitacao de credito PF/PJ, de responsabilidade do Processo 3 (Credito PF e PJ). PENDENCIA: o contrato deste processo ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural, aceita propriedades adicionais e nao declara nenhum campo obrigatorio. Os dados de identificacao do cliente ficam no bloco cliente, e o perfil financeiro no bloco cadastro, para nao duplicar informacao.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "valorSolicitado": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Valor de credito solicitado. Campo declarado por ser o minimo necessario para representar uma solicitacao de credito no documento; permanece OPCIONAL enquanto o contrato do Processo 3 nao for definido."
+        },
+        "prazoMeses": {
+          "$ref": "#/$defs/comuns/$defs/prazoMeses",
+          "description": "Prazo solicitado em meses. Permanece OPCIONAL enquanto o contrato do Processo 3 nao for definido."
+        },
+        "taxaJurosMensalPercentual": {
+          "$ref": "#/$defs/comuns/$defs/taxaPercentualMensal",
+          "description": "Taxa de juros em percentual mensal (1.35 = 1,35% ao mes). Campo herdado do taxa_juros_mensal do contrato v1.0.0 deste projeto, para onde as mensagens no formato antigo sao convertidas. Nao foi inventado: existe no codigo atual. Permanece OPCIONAL enquanto o contrato do Processo 3 nao for definido."
+        },
+        "finalidade": {
+          "description": "Finalidade do credito. Texto livre enquanto o contrato do Processo 3 nao for definido.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      }
+    },
+    "decisao": {
+      "title": "Decisao",
+      "description": "RESULTADO da analise de credito, produzido pelo Processo 9 (Decisao). O Processo 6 nao decide nada: apenas recebe, valida e apresenta. PENDENCIA: o contrato final da Decisao ainda depende de alinhamento entre os grupos, portanto o bloco aceita propriedades adicionais e exige apenas resultado.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "resultado"
+      ],
+      "properties": {
+        "resultado": {
+          "title": "ResultadoDecisao",
+          "description": "Resultado da analise. O enum reune os valores informados por DOIS grupos diferentes: o grupo Financiamento de Imoveis informou APROVADA, RECUSADA e ANALISE_MANUAL; o grupo Controle Financeiro de Operacoes informou APROVADO. PENDENCIA: a divergencia de vocabulario e real e precisa ser alinhada com o grupo Decisao. Enquanto isso, os dois vocabularios sao aceitos para nao bloquear a integracao de nenhum dos grupos.",
+          "type": "string",
+          "enum": [
+            "APROVADA",
+            "RECUSADA",
+            "ANALISE_MANUAL",
+            "APROVADO"
+          ]
+        },
+        "motivos": {
+          "description": "Motivos da decisao. Corresponde aos motivos da decisao informados pelo grupo Financiamento de Imoveis e ao motivoDecisao repassado ao grupo Controle Financeiro de Operacoes. Pode ser uma lista vazia.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "versaoPolitica": {
+          "description": "Versao da politica de credito aplicada. Informada pelo grupo Financiamento de Imoveis.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "dataAprovacao": {
+          "$ref": "#/$defs/comuns/$defs/data",
+          "description": "Data da aprovacao. Repassada ao grupo Controle Financeiro de Operacoes."
+        },
+        "valorAprovado": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Valor aprovado na analise. Repassado ao grupo Controle Financeiro de Operacoes."
+        },
+        "decididoEm": {
+          "$ref": "#/$defs/comuns/$defs/timestampUtc",
+          "description": "Momento da decisao, em ISO-8601 UTC."
+        }
+      }
+    },
+    "documento": {
+      "title": "Documento",
+      "description": "Bloco do Processo 6 (Estruturacao de Documentos Nao Relacionais). Na ENTRADA descreve qual documento deve ser emitido. As informacoes do documento JA GERADO (identificador, caminho, hash, status) nao ficam aqui: sao devolvidas na resposta HTTP, gravadas no repositorio de metadados e publicadas no evento documento.gerado, e podem ser reenviadas em correlacao.idDocumento.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tipoDocumento"
+      ],
+      "properties": {
+        "tipoDocumento": {
+          "title": "TipoDocumento",
+          "description": "Tipo de documento a emitir. Hoje o Processo 6 emite apenas a proposta da operacao de credito, que e o documento implementado no projeto. Novos tipos (contrato, termo de quitacao, etc.) serao adicionados ao enum quando definidos.",
+          "type": "string",
+          "enum": [
+            "PROPOSTA_CREDITO"
+          ]
+        },
+        "titulo": {
+          "description": "Titulo a ser impresso no documento. Se ausente, o Processo 6 usa o titulo padrao do template.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "observacoes": {
+          "description": "Observacoes livres a serem impressas no documento.",
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "financiamento": {
+      "title": "Financiamento",
+      "description": "Dados especificos do financiamento. O campo tipo seleciona qual sub-bloco se aplica: imobiliario (Processo 4) ou automotivo (Processo 8). Uma operacao imobiliaria NAO exige dados automotivos e vice-versa; essa exigencia condicional e aplicada no schema raiz, em if/then.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tipo"
+      ],
+      "properties": {
+        "tipo": {
+          "title": "TipoFinanciamento",
+          "description": "Modalidade do financiamento. Os dois valores correspondem aos Processos 4 (Financiamento de Imoveis) e 8 (Financiamento Automotivo) da Esteira.",
+          "type": "string",
+          "enum": [
+            "IMOBILIARIO",
+            "AUTOMOTIVO"
+          ]
+        },
+        "imobiliario": {
+          "title": "FinanciamentoImobiliario",
+          "description": "Dados do financiamento imobiliario, conforme entrada e saida declaradas pelo grupo Financiamento de Imoveis. Os campos calculados pelo proprio grupo (valor financiado, parcelas, totais, comprometimento de renda) sao OPCIONAIS aqui: o Processo 6 apenas apresenta o que recebe e nao recalcula nenhum deles. OBSERVACAO: a matricula do imovel nao foi implementada pelo grupo e portanto nao existe neste contrato.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "valorImovel",
+            "valorEntrada",
+            "prazoMeses",
+            "taxaJurosMensal",
+            "sistemaAmortizacao"
+          ],
+          "properties": {
+            "tipoImovel": {
+              "description": "Tipo do imovel. A lista de valores aceitos ainda nao foi definida pelo grupo, portanto e aceito como texto livre.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "cidade": {
+              "description": "Cidade do IMOVEL. Nao confundir com cliente.endereco.cidade, que e a cidade do cliente.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "estado": {
+              "description": "Unidade federativa do IMOVEL, com 2 letras maiusculas.",
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            "valorImovel": {
+              "$ref": "#/$defs/comuns/$defs/valorMonetario",
+              "description": "Valor do imovel. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+            },
+            "valorEntrada": {
+              "$ref": "#/$defs/comuns/$defs/valorMonetario",
+              "description": "Valor da entrada. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+            },
+            "valorFinanciado": {
+              "$ref": "#/$defs/comuns/$defs/valorMonetario",
+              "description": "Valor financiado, calculado pelo grupo Financiamento de Imoveis. O Processo 6 nao o recalcula."
+            },
+            "prazoMeses": {
+              "$ref": "#/$defs/comuns/$defs/prazoMeses",
+              "description": "Prazo do financiamento em meses. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+            },
+            "taxaJurosMensal": {
+              "$ref": "#/$defs/comuns/$defs/taxaPercentualMensal",
+              "description": "Taxa de juros em PERCENTUAL mensal (1.35 = 1,35% ao mes), conforme a regra do grupo Financiamento de Imoveis. Difere de operacaoFinanceira.taxaJuros, que o grupo Controle Financeiro declarou em forma decimal."
+            },
+            "sistemaAmortizacao": {
+              "$ref": "#/$defs/comuns/$defs/sistemaAmortizacao",
+              "description": "Sistema de amortizacao. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+            },
+            "valorPrimeiraParcela": {
+              "$ref": "#/$defs/comuns/$defs/valorMonetario",
+              "description": "Valor da primeira parcela, calculado pelo grupo Financiamento de Imoveis."
+            },
+            "valorUltimaParcela": {
+              "$ref": "#/$defs/comuns/$defs/valorMonetario",
+              "description": "Valor da ultima parcela, calculado pelo grupo Financiamento de Imoveis."
+            },
+            "totalJurosEstimado": {
+              "$ref": "#/$defs/comuns/$defs/valorMonetario",
+              "description": "Total estimado de juros, calculado pelo grupo Financiamento de Imoveis."
+            },
+            "totalPagoEstimado": {
+              "$ref": "#/$defs/comuns/$defs/valorMonetario",
+              "description": "Total estimado pago, calculado pelo grupo Financiamento de Imoveis."
+            },
+            "comprometimentoRenda": {
+              "description": "Comprometimento da renda, calculado pelo grupo Financiamento de Imoveis. PENDENCIA: o grupo nao informou se o valor e percentual (0 a 100) ou fracao (0 a 1), portanto apenas o piso 0 e validado.",
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "automotivo": {
+          "title": "FinanciamentoAutomotivo",
+          "description": "Dados do financiamento automotivo (Processo 8). PENDENCIA: o contrato do Financiamento Automotivo ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural, aceita propriedades adicionais e nao declara nenhum campo. Quando o grupo fornecer o contrato, os campos serao declarados aqui sem alterar o restante da estrutura.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "integracoes": {
+          "description": "Informacoes das integracoes consultadas durante a analise, citadas na saida do grupo Financiamento de Imoveis. PENDENCIA: a estrutura de cada item ainda nao foi informada, portanto qualquer objeto e aceito.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "juros": {
+      "title": "Juros",
+      "description": "Resultado do calculo financeiro do Processo 5 (Calculo de Juros). PENDENCIA: o contrato do Processo 5 ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural do fluxo DECISAO -> JUROS -> CONTROLE FINANCEIRO, aceita propriedades adicionais e nao declara nenhum campo obrigatorio. Os dois campos abaixo sao os unicos com evidencia nos requisitos: aparecem como taxaJuros e sistemaAmortizacao na entrada declarada pelo grupo Controle Financeiro de Operacoes, que os recebe a jusante do calculo de juros. O Processo 6 nao recalcula juros.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "taxaMensal": {
+          "$ref": "#/$defs/comuns/$defs/taxaDecimal",
+          "description": "Taxa mensal calculada, em forma decimal (0.0199 = 1,99% ao mes), na mesma unidade adotada pelo grupo Controle Financeiro de Operacoes."
+        },
+        "sistemaAmortizacao": {
+          "$ref": "#/$defs/comuns/$defs/sistemaAmortizacao",
+          "description": "Sistema de amortizacao adotado no calculo."
+        },
+        "calculadoEm": {
+          "$ref": "#/$defs/comuns/$defs/timestampUtc",
+          "description": "Momento do calculo, em ISO-8601 UTC."
+        }
+      }
+    },
+    "metadados": {
+      "title": "Metadados",
+      "description": "Metadados de rastreabilidade da operacao: de qual processo a informacao veio, quando foi criada e quais processos participaram. A versao do contrato fica no campo raiz schemaVersion, e nao aqui, para nao existir em dois lugares. A versao de cada modelo fica junto do seu resultado (por exemplo score.modelo.versao).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "origem": {
+          "$ref": "#/$defs/comuns/$defs/processoEsteira",
+          "description": "Processo da Esteira que enviou esta mensagem ao Processo 6."
+        },
+        "criadoEm": {
+          "$ref": "#/$defs/comuns/$defs/timestampUtc",
+          "description": "Momento de criacao do registro da operacao, em ISO-8601 UTC."
+        },
+        "atualizadoEm": {
+          "$ref": "#/$defs/comuns/$defs/timestampUtc",
+          "description": "Momento da ultima atualizacao do registro da operacao, em ISO-8601 UTC."
+        },
+        "processosParticipantes": {
+          "description": "Processos da Esteira que participaram desta operacao. Permite descobrir quais blocos do contrato foram preenchidos e por quem. Pode ser uma lista vazia.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/comuns/$defs/processoEsteira"
+          }
+        }
+      }
+    },
+    "operacao_financeira": {
+      "title": "OperacaoFinanceira",
+      "description": "Operacao financeira contratada e seu cronograma de parcelas, produzidos pelo Processo 2 (Controle Financeiro de Operacoes). Este bloco consolida o que o roteiro arquitetural chamava de operacaoFinanceira e controleFinanceiro: como ambos descrevem a MESMA operacao e o MESMO cronograma, mante-los separados duplicaria informacao sem necessidade. O Processo 6 nao recalcula parcelas nem saldos: apenas apresenta o cronograma recebido.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "numeroOperacao",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/comuns/$defs/uuid",
+          "description": "Identificador UUID da operacao, gerado pelo grupo Controle Financeiro de Operacoes."
+        },
+        "numeroOperacao": {
+          "description": "Numero da operacao no formato OP-AAAA-NNNNNN, conforme regra do grupo Controle Financeiro de Operacoes.",
+          "type": "string",
+          "pattern": "^OP-[0-9]{4}-[0-9]{6}$"
+        },
+        "status": {
+          "title": "StatusOperacao",
+          "description": "Situacao da operacao. O grupo Controle Financeiro de Operacoes informou apenas o estado inicial ATIVA. PENDENCIA: os demais estados do ciclo de vida (por exemplo quitada ou cancelada) ainda nao foram informados e serao adicionados ao enum quando definidos.",
+          "type": "string",
+          "enum": [
+            "ATIVA"
+          ]
+        },
+        "valorAprovado": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Valor aprovado que originou a operacao, recebido da Decisao."
+        },
+        "saldoDevedor": {
+          "$ref": "#/$defs/comuns/$defs/valorMonetario",
+          "description": "Saldo devedor da operacao, gerado pelo grupo Controle Financeiro de Operacoes."
+        },
+        "prazo": {
+          "$ref": "#/$defs/comuns/$defs/prazoMeses",
+          "description": "Prazo da operacao em meses."
+        },
+        "quantidadeParcelas": {
+          "description": "Quantidade de parcelas da operacao.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "taxaJuros": {
+          "$ref": "#/$defs/comuns/$defs/taxaDecimal",
+          "description": "Taxa de juros mensal em forma DECIMAL, com ate 6 casas (0.0199 = 1,99% ao mes), conforme regra do grupo Controle Financeiro de Operacoes. Difere de financiamento.imobiliario.taxaJurosMensal, declarada em percentual pelo grupo Financiamento de Imoveis."
+        },
+        "sistemaAmortizacao": {
+          "$ref": "#/$defs/comuns/$defs/sistemaAmortizacao",
+          "description": "Sistema de amortizacao da operacao."
+        },
+        "primeiroVencimento": {
+          "$ref": "#/$defs/comuns/$defs/data",
+          "description": "Data do primeiro vencimento, no formato YYYY-MM-DD."
+        },
+        "dataAprovacao": {
+          "$ref": "#/$defs/comuns/$defs/data",
+          "description": "Data de aprovacao recebida da Decisao, no formato YYYY-MM-DD."
+        },
+        "criadoEm": {
+          "$ref": "#/$defs/comuns/$defs/timestampUtc",
+          "description": "Momento de criacao da operacao, em ISO-8601 UTC, conforme regra do grupo Controle Financeiro de Operacoes."
+        },
+        "cronograma": {
+          "description": "Cronograma de parcelas gerado pelo grupo Controle Financeiro de Operacoes. Pode ser uma lista vazia quando o cronograma ainda nao foi gerado.",
+          "type": "array",
+          "items": {
+            "title": "Parcela",
+            "description": "Parcela do cronograma. Todos os campos declarados pelo grupo Controle Financeiro de Operacoes sao exigidos, porque a parcela so faz sentido completa.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "numero",
+              "vencimento",
+              "valorParcela",
+              "valorAmortizacao",
+              "juros",
+              "saldoDevedorAposParcela",
+              "status"
+            ],
+            "properties": {
+              "numero": {
+                "description": "Numero sequencial da parcela.",
+                "type": "integer",
+                "minimum": 1
+              },
+              "vencimento": {
+                "$ref": "#/$defs/comuns/$defs/data",
+                "description": "Data de vencimento da parcela, no formato YYYY-MM-DD."
+              },
+              "valorParcela": {
+                "$ref": "#/$defs/comuns/$defs/valorMonetario"
+              },
+              "valorAmortizacao": {
+                "$ref": "#/$defs/comuns/$defs/valorMonetario"
+              },
+              "juros": {
+                "$ref": "#/$defs/comuns/$defs/valorMonetario"
+              },
+              "saldoDevedorAposParcela": {
+                "$ref": "#/$defs/comuns/$defs/valorMonetario"
+              },
+              "status": {
+                "title": "StatusParcela",
+                "description": "Situacao da parcela. O grupo Controle Financeiro de Operacoes informou apenas o estado inicial PENDENTE. PENDENCIA: os demais estados (por exemplo paga ou atrasada) ainda nao foram informados e serao adicionados ao enum quando definidos.",
+                "type": "string",
+                "enum": [
+                  "PENDENTE"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "produto_financeiro": {
+      "title": "ProdutoFinanceiro",
+      "description": "Produto financeiro da operacao, de responsabilidade do Processo 7 (Produtos Financeiros). PENDENCIA: o contrato deste processo ainda NAO foi fornecido, portanto o bloco aceita propriedades adicionais e nao declara nenhum campo obrigatorio. O enum de categoria NAO foi inventado: seus valores sao os mesmos do campo tipo_produto que ja existia no contrato v1.0.0 deste projeto, preservados para que o Processo 6 continue selecionando o template do documento quando o bloco financiamento nao estiver presente.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "categoria": {
+          "title": "CategoriaProduto",
+          "description": "Categoria do produto. Valores herdados do campo tipo_produto do contrato v1.0.0 deste projeto. Usada pelo Processo 6 para escolher o template do PDF quando o bloco financiamento nao esta presente.",
+          "type": "string",
+          "enum": [
+            "FINANCIAMENTO_IMOVEL",
+            "FINANCIAMENTO_AUTOMOVEL",
+            "CREDITO_PESSOAL"
+          ]
+        },
+        "codigo": {
+          "description": "Codigo do produto no catalogo do Processo 7. Texto livre enquanto o contrato nao for definido.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "nome": {
+          "description": "Nome comercial do produto. Texto livre enquanto o contrato nao for definido.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "promocao": {
+      "title": "Promocao",
+      "description": "Informacoes de promocoes e acoes de credito aplicadas a operacao, de responsabilidade do Processo 1 (Promocoes e Acoes de Credito). PENDENCIA: o contrato deste processo ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural, aceita propriedades adicionais e nao declara nenhum campo obrigatorio. Nenhum campo foi inventado porque nao ha requisito que os sustente.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "score": {
+      "title": "Score",
+      "description": "RESULTADO da avaliacao de risco, produzido pelo Processo 10 (Score). O Processo 6 nao recalcula o score: apenas recebe, valida e apresenta. As entradas do calculo ficam em cadastro e cliente.dadosPF. Os campos clienteId e tipoPessoa, presentes na saida original do grupo Score, nao sao repetidos aqui: sao lidos de correlacao.idCliente e cliente.tipoPessoa, para evitar a mesma informacao em varios blocos.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scoreFinal",
+        "faixaRisco",
+        "probabilidadeDefault",
+        "modelo",
+        "calculatedAt",
+        "origem",
+        "componentes",
+        "fatoresImpacto"
+      ],
+      "properties": {
+        "scoreFinal": {
+          "description": "Pontuacao final do cliente. Numero inteiro de 0 a 1000, conforme regra do grupo Score.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "faixaRisco": {
+          "title": "FaixaRisco",
+          "description": "Faixa de risco atribuida ao cliente. Valores informados pelo grupo Score.",
+          "type": "string",
+          "enum": [
+            "EXCELENTE",
+            "BOM",
+            "REGULAR",
+            "CRITICO"
+          ]
+        },
+        "probabilidadeDefault": {
+          "description": "Probabilidade de inadimplencia, em numero decimal. O grupo Score nao definiu limite superior, portanto apenas o piso 0 e validado. PENDENCIA: confirmar se a escala e 0 a 1 ou 0 a 100.",
+          "type": "number",
+          "minimum": 0
+        },
+        "modelo": {
+          "title": "ScoreModelo",
+          "description": "Identificacao do modelo que produziu o resultado. Preservada para rastreabilidade: o mesmo cliente pode ter scores calculados por versoes diferentes do modelo.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "codigo"
+          ],
+          "properties": {
+            "codigo": {
+              "description": "Codigo do modelo. Valores informados pelo grupo Score.",
+              "type": "string",
+              "enum": [
+                "SCORE_PF",
+                "SCORE_PJ"
+              ]
+            },
+            "versao": {
+              "description": "Versao do modelo, no formato usado pelo grupo Score (exemplo: v1.1.0).",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        },
+        "calculatedAt": {
+          "$ref": "#/$defs/comuns/$defs/timestampUtc",
+          "description": "Momento do calculo, em ISO-8601 UTC, conforme regra do grupo Score."
+        },
+        "origem": {
+          "title": "ScoreOrigem",
+          "description": "Indica se o resultado foi calculado agora ou recuperado da base. Valores informados pelo grupo Score.",
+          "type": "string",
+          "enum": [
+            "CALCULO",
+            "BANCO"
+          ]
+        },
+        "componentes": {
+          "description": "Componentes que formaram a pontuacao. O grupo Score exige que a lista EXISTA no contrato de saida, podendo estar vazia. Cada componente PODE possuir os campos abaixo, portanto nenhum deles e obrigatorio.",
+          "type": "array",
+          "items": {
+            "title": "ScoreComponente",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nome": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "pontuacao": {
+                "type": "number"
+              },
+              "pontuacaoMaxima": {
+                "type": "number"
+              },
+              "pesoPonderado": {
+                "type": "number"
+              },
+              "motivo": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          }
+        },
+        "fatoresImpacto": {
+          "description": "Fatores que impactaram a pontuacao. O grupo Score exige que a lista EXISTA no contrato de saida, podendo estar vazia. PENDENCIA: a estrutura de cada item ainda nao foi informada pelo grupo, portanto qualquer objeto e aceito e nenhum campo e validado.",
+          "type": "array",
+          "items": {
+            "title": "ScoreFatorImpacto",
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
   }
 }

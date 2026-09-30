@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/metadados.schema.json",
+  "title": "Metadados",
+  "description": "Metadados de rastreabilidade da operacao: de qual processo a informacao veio, quando foi criada e quais processos participaram. A versao do contrato fica no campo raiz schemaVersion, e nao aqui, para nao existir em dois lugares. A versao de cada modelo fica junto do seu resultado (por exemplo score.modelo.versao).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "origem": {
+      "$ref": "comuns.schema.json#/$defs/processoEsteira",
+      "description": "Processo da Esteira que enviou esta mensagem ao Processo 6."
+    },
+    "criadoEm": {
+      "$ref": "comuns.schema.json#/$defs/timestampUtc",
+      "description": "Momento de criacao do registro da operacao, em ISO-8601 UTC."
+    },
+    "atualizadoEm": {
+      "$ref": "comuns.schema.json#/$defs/timestampUtc",
+      "description": "Momento da ultima atualizacao do registro da operacao, em ISO-8601 UTC."
+    },
+    "processosParticipantes": {
+      "description": "Processos da Esteira que participaram desta operacao. Permite descobrir quais blocos do contrato foram preenchidos e por quem. Pode ser uma lista vazia.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "comuns.schema.json#/$defs/processoEsteira"
+      }
+    }
+  }
+}

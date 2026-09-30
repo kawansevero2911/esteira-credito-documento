@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/decisao.schema.json",
+  "title": "Decisao",
+  "description": "RESULTADO da analise de credito, produzido pelo Processo 9 (Decisao). O Processo 6 nao decide nada: apenas recebe, valida e apresenta. PENDENCIA: o contrato final da Decisao ainda depende de alinhamento entre os grupos, portanto o bloco aceita propriedades adicionais e exige apenas resultado.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["resultado"],
+  "properties": {
+    "resultado": {
+      "title": "ResultadoDecisao",
+      "description": "Resultado da analise. O enum reune os valores informados por DOIS grupos diferentes: o grupo Financiamento de Imoveis informou APROVADA, RECUSADA e ANALISE_MANUAL; o grupo Controle Financeiro de Operacoes informou APROVADO. PENDENCIA: a divergencia de vocabulario e real e precisa ser alinhada com o grupo Decisao. Enquanto isso, os dois vocabularios sao aceitos para nao bloquear a integracao de nenhum dos grupos.",
+      "type": "string",
+      "enum": ["APROVADA", "RECUSADA", "ANALISE_MANUAL", "APROVADO"]
+    },
+    "motivos": {
+      "description": "Motivos da decisao. Corresponde aos motivos da decisao informados pelo grupo Financiamento de Imoveis e ao motivoDecisao repassado ao grupo Controle Financeiro de Operacoes. Pode ser uma lista vazia.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "versaoPolitica": {
+      "description": "Versao da politica de credito aplicada. Informada pelo grupo Financiamento de Imoveis.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "dataAprovacao": {
+      "$ref": "comuns.schema.json#/$defs/data",
+      "description": "Data da aprovacao. Repassada ao grupo Controle Financeiro de Operacoes."
+    },
+    "valorAprovado": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Valor aprovado na analise. Repassado ao grupo Controle Financeiro de Operacoes."
+    },
+    "decididoEm": {
+      "$ref": "comuns.schema.json#/$defs/timestampUtc",
+      "description": "Momento da decisao, em ISO-8601 UTC."
+    }
+  }
+}

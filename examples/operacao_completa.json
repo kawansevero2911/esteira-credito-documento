@@ -1,0 +1,156 @@
+{
+  "schemaVersion": "1.2.0",
+  "correlacao": {
+    "idOperacao": "OP-2026-000400",
+    "idCliente": "CLI-EXEMPLO-0004",
+    "idProposta": "PROP-EXEMPLO-0004"
+  },
+  "documento": {
+    "tipoDocumento": "PROPOSTA_CREDITO",
+    "titulo": "Operação de Financiamento Imobiliário Contratada",
+    "observacoes": "Documento de exemplo, percorrendo os processos Credito, Score, Juros, Decisao e Controle Financeiro. O cronograma traz apenas as 3 primeiras parcelas, como recorte ilustrativo: o cronograma real de 240 parcelas e produzido pelo processo Controle Financeiro de Operacoes."
+  },
+  "cliente": {
+    "tipoPessoa": "PF",
+    "dadosPF": {
+      "nomeCompleto": "Cliente Exemplo Contratado",
+      "cpf": "12345678904",
+      "dataNascimento": "1982-07-15",
+      "idade": 44,
+      "estadoCivil": "CASADO",
+      "numeroDependentes": 2
+    },
+    "contato": {
+      "telefone": "(81) 90000-0004",
+      "email": "cliente.contratado@example.com"
+    },
+    "endereco": {
+      "logradouro": "Rua da Operação Ativa",
+      "numero": "777",
+      "bairro": "Graças",
+      "cidade": "Recife",
+      "estado": "PE",
+      "cep": "52000000"
+    }
+  },
+  "cadastro": {
+    "rendaMensal": 18000.00,
+    "dividaTotal": 15000.00,
+    "diasAtrasoUltimos12Meses": 0,
+    "limiteRotativoUtilizado": 1200.00,
+    "limiteRotativoTotal": 20000.00,
+    "mesesNoEmpregoAtual": 90,
+    "mesesRelacionamentoBanco": 180
+  },
+  "produtoFinanceiro": {
+    "categoria": "FINANCIAMENTO_IMOVEL",
+    "codigo": "PROD-IMOB-001",
+    "nome": "Financiamento Imobiliário Exemplo"
+  },
+  "financiamento": {
+    "tipo": "IMOBILIARIO",
+    "imobiliario": {
+      "tipoImovel": "APARTAMENTO",
+      "cidade": "Recife",
+      "estado": "PE",
+      "valorImovel": 500000.00,
+      "valorEntrada": 180000.00,
+      "valorFinanciado": 320000.00,
+      "prazoMeses": 240,
+      "taxaJurosMensal": 1.99,
+      "sistemaAmortizacao": "PRICE"
+    }
+  },
+  "score": {
+    "scoreFinal": 742,
+    "faixaRisco": "BOM",
+    "probabilidadeDefault": 0.087,
+    "modelo": {
+      "codigo": "SCORE_PF",
+      "versao": "v1.1.0"
+    },
+    "calculatedAt": "2026-09-25T18:30:00Z",
+    "origem": "CALCULO",
+    "componentes": [
+      {
+        "nome": "Renda comprometida",
+        "pontuacao": 180,
+        "pontuacaoMaxima": 250,
+        "pesoPonderado": 0.30,
+        "motivo": "Comprometimento moderado da renda"
+      }
+    ],
+    "fatoresImpacto": []
+  },
+  "juros": {
+    "taxaMensal": 0.0199,
+    "sistemaAmortizacao": "PRICE",
+    "calculadoEm": "2026-09-25T18:31:00Z"
+  },
+  "decisao": {
+    "resultado": "APROVADA",
+    "motivos": ["Score na faixa BOM", "Renda compativel com a parcela"],
+    "versaoPolitica": "POL-2026.09",
+    "dataAprovacao": "2026-09-25",
+    "valorAprovado": 320000.00,
+    "decididoEm": "2026-09-25T18:32:00Z"
+  },
+  "operacaoFinanceira": {
+    "id": "3f1c2a9e-8d4b-4c1e-9a55-2b7f0c6d1e42",
+    "numeroOperacao": "OP-2026-000400",
+    "status": "ATIVA",
+    "valorAprovado": 320000.00,
+    "saldoDevedor": 320000.00,
+    "prazo": 240,
+    "quantidadeParcelas": 240,
+    "taxaJuros": 0.0199,
+    "sistemaAmortizacao": "PRICE",
+    "primeiroVencimento": "2026-11-05",
+    "dataAprovacao": "2026-09-25",
+    "criadoEm": "2026-09-25T18:35:00Z",
+    "cronograma": [
+      {
+        "numero": 1,
+        "vencimento": "2026-11-05",
+        "valorParcela": 2800.00,
+        "valorAmortizacao": 1500.00,
+        "juros": 1300.00,
+        "saldoDevedorAposParcela": 318500.00,
+        "status": "PENDENTE"
+      },
+      {
+        "numero": 2,
+        "vencimento": "2026-12-05",
+        "valorParcela": 2800.00,
+        "valorAmortizacao": 1506.09,
+        "juros": 1293.91,
+        "saldoDevedorAposParcela": 316993.91,
+        "status": "PENDENTE"
+      },
+      {
+        "numero": 3,
+        "vencimento": "2027-01-05",
+        "valorParcela": 2800.00,
+        "valorAmortizacao": 1512.21,
+        "juros": 1287.79,
+        "saldoDevedorAposParcela": 315481.70,
+        "status": "PENDENTE"
+      }
+    ]
+  },
+  "metadados": {
+    "origem": "CONTROLE_FINANCEIRO_OPERACOES",
+    "criadoEm": "2026-09-25T18:28:00Z",
+    "atualizadoEm": "2026-09-25T18:35:00Z",
+    "processosParticipantes": [
+      "CREDITO_PF_PJ",
+      "PRODUTOS_FINANCEIROS",
+      "FINANCIAMENTO_IMOVEIS",
+      "SCORE",
+      "CALCULO_JUROS",
+      "DECISAO",
+      "CONTROLE_FINANCEIRO_OPERACOES",
+      "ESTRUTURACAO_DOCUMENTOS"
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.2.0",
+  "correlacao": {
+    "idOperacao": "OP-2026-000500",
+    "idCliente": "CLI-EXEMPLO-PJ-0001"
+  },
+  "documento": {
+    "tipoDocumento": "PROPOSTA_CREDITO",
+    "titulo": "Proposta de Crédito — Pessoa Jurídica",
+    "observacoes": "Documento de exemplo. O contrato completo de PJ ainda depende de alinhamento com o grupo Credito PF e PJ: por isso o bloco dadosPJ nao exige nenhum campo e o bloco credito permanece aberto. Este exemplo existe para mostrar que o contrato canonico nao e exclusivo de pessoa fisica."
+  },
+  "cliente": {
+    "tipoPessoa": "PJ",
+    "dadosPJ": {
+      "razaoSocial": "Empresa Exemplo Ltda",
+      "nomeFantasia": "Exemplo",
+      "cnpj": "12345678000199"
+    },
+    "contato": {
+      "email": "financeiro@empresa-exemplo.example.com"
+    },
+    "endereco": {
+      "logradouro": "Avenida Empresarial de Exemplo",
+      "numero": "1000",
+      "cidade": "Recife",
+      "estado": "PE"
+    }
+  },
+  "produtoFinanceiro": {
+    "categoria": "CREDITO_PESSOAL",
+    "nome": "Crédito Empresarial Exemplo"
+  },
+  "credito": {
+    "valorSolicitado": 250000.00,
+    "prazoMeses": 36,
+    "finalidade": "Capital de giro"
+  },
+  "metadados": {
+    "origem": "CREDITO_PF_PJ",
+    "criadoEm": "2026-09-25T19:00:00Z",
+    "processosParticipantes": ["CREDITO_PF_PJ", "PRODUTOS_FINANCEIROS"]
+  }
+}

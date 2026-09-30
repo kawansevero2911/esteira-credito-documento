@@ -1,0 +1,11 @@
+{
+  "id_operacao": "OP-2026-000999",
+  "tipo_produto": "financiamento_automovel",
+  "cliente": {
+    "nome": "Cliente Exemplo Legado",
+    "documento": "000.000.000-00"
+  },
+  "valor": 45000.0,
+  "prazo_meses": 48,
+  "taxa_juros_mensal": 1.35
+}

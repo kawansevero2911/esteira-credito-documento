@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/produto_financeiro.schema.json",
+  "title": "ProdutoFinanceiro",
+  "description": "Produto financeiro da operacao, de responsabilidade do Processo 7 (Produtos Financeiros). PENDENCIA: o contrato deste processo ainda NAO foi fornecido, portanto o bloco aceita propriedades adicionais e nao declara nenhum campo obrigatorio. O enum de categoria NAO foi inventado: seus valores sao os mesmos do campo tipo_produto que ja existia no contrato v1.0.0 deste projeto, preservados para que o Processo 6 continue selecionando o template do documento quando o bloco financiamento nao estiver presente.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "categoria": {
+      "title": "CategoriaProduto",
+      "description": "Categoria do produto. Valores herdados do campo tipo_produto do contrato v1.0.0 deste projeto. Usada pelo Processo 6 para escolher o template do PDF quando o bloco financiamento nao esta presente.",
+      "type": "string",
+      "enum": [
+        "FINANCIAMENTO_IMOVEL",
+        "FINANCIAMENTO_AUTOMOVEL",
+        "CREDITO_PESSOAL"
+      ]
+    },
+    "codigo": {
+      "description": "Codigo do produto no catalogo do Processo 7. Texto livre enquanto o contrato nao for definido.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "nome": {
+      "description": "Nome comercial do produto. Texto livre enquanto o contrato nao for definido.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  }
+}

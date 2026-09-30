@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "1.2.0",
+  "correlacao": {
+    "idOperacao": "OP-2026-000200",
+    "idCliente": "CLI-EXEMPLO-0002",
+    "idProposta": "PROP-EXEMPLO-0002"
+  },
+  "documento": {
+    "tipoDocumento": "PROPOSTA_CREDITO",
+    "titulo": "Proposta de Financiamento Imobiliário com Análise de Risco",
+    "observacoes": "Documento de exemplo. O bloco score foi preenchido pelo processo Score."
+  },
+  "cliente": {
+    "tipoPessoa": "PF",
+    "dadosPF": {
+      "nomeCompleto": "Cliente Exemplo com Score",
+      "cpf": "12345678902",
+      "dataNascimento": "1988-03-20",
+      "idade": 38,
+      "estadoCivil": "SOLTEIRO",
+      "numeroDependentes": 0
+    },
+    "endereco": {
+      "logradouro": "Avenida de Exemplo",
+      "numero": "250",
+      "cidade": "Olinda",
+      "estado": "PE"
+    }
+  },
+  "cadastro": {
+    "rendaMensal": 11000.00,
+    "dividaTotal": 4500.00,
+    "diasAtrasoUltimos12Meses": 0,
+    "limiteRotativoUtilizado": 800.00,
+    "limiteRotativoTotal": 9000.00,
+    "mesesNoEmpregoAtual": 62,
+    "mesesRelacionamentoBanco": 96
+  },
+  "produtoFinanceiro": {
+    "categoria": "FINANCIAMENTO_IMOVEL"
+  },
+  "financiamento": {
+    "tipo": "IMOBILIARIO",
+    "imobiliario": {
+      "tipoImovel": "CASA",
+      "cidade": "Olinda",
+      "estado": "PE",
+      "valorImovel": 550000.00,
+      "valorEntrada": 150000.00,
+      "valorFinanciado": 400000.00,
+      "prazoMeses": 300,
+      "taxaJurosMensal": 0.89,
+      "sistemaAmortizacao": "PRICE"
+    }
+  },
+  "score": {
+    "scoreFinal": 812,
+    "faixaRisco": "EXCELENTE",
+    "probabilidadeDefault": 0.031,
+    "modelo": {
+      "codigo": "SCORE_PF",
+      "versao": "v1.1.0"
+    },
+    "calculatedAt": "2026-09-25T18:10:00Z",
+    "origem": "CALCULO",
+    "componentes": [
+      {
+        "nome": "Renda comprometida",
+        "pontuacao": 210,
+        "pontuacaoMaxima": 250,
+        "pesoPonderado": 0.30,
+        "motivo": "Renda compativel com o valor solicitado"
+      },
+      {
+        "nome": "Histórico de pagamento",
+        "pontuacao": 240,
+        "pontuacaoMaxima": 250,
+        "pesoPonderado": 0.35,
+        "motivo": "Sem atrasos nos ultimos 12 meses"
+      },
+      {
+        "nome": "Relacionamento com o banco",
+        "pontuacao": 180,
+        "pontuacaoMaxima": 200,
+        "pesoPonderado": 0.20,
+        "motivo": "Relacionamento superior a 8 anos"
+      }
+    ],
+    "fatoresImpacto": []
+  },
+  "metadados": {
+    "origem": "SCORE",
+    "criadoEm": "2026-09-25T18:05:00Z",
+    "atualizadoEm": "2026-09-25T18:10:00Z",
+    "processosParticipantes": ["FINANCIAMENTO_IMOVEIS", "CREDITO_PF_PJ", "SCORE"]
+  }
+}

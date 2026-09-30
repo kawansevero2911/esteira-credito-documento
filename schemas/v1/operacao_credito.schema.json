@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/operacao_credito.schema.json",
+  "title": "OperacaoCredito",
+  "description": "CONTRATO CANONICO DA ESTEIRA DE CREDITO, versao 1.2.0.\n\nEste e o contrato unico de comunicacao entre os 10 processos da Esteira. Cada processo preenche apenas os blocos que sao da sua responsabilidade; nenhum processo e obrigado a enviar campos que nao lhe pertencem. O Processo 6 (Estruturacao de Documentos Nao Relacionais) recebe este JSON, valida, mapeia para um modelo documental, gera o PDF, armazena os metadados e publica o evento documento.gerado.\n\nRESPONSAVEL POR CADA BLOCO:\n- correlacao: identificadores de rastreio, comuns a todos os processos\n- documento: Processo 6 (Estruturacao de Documentos)\n- cliente: Processo 3 (Credito PF e PJ)\n- cadastro: Processo 3, usado como entrada pelo Processo 10\n- promocao: Processo 1 (Promocoes e Acoes de Credito) - contrato nao definido\n- credito: Processo 3 (Credito PF e PJ) - contrato nao definido\n- produtoFinanceiro: Processo 7 (Produtos Financeiros) - contrato nao definido\n- financiamento: Processo 4 (Imoveis) e Processo 8 (Automotivo)\n- score: Processo 10 (Score)\n- juros: Processo 5 (Calculo de Juros) - contrato nao definido\n- decisao: Processo 9 (Decisao) - contrato final nao definido\n- operacaoFinanceira: Processo 2 (Controle Financeiro de Operacoes)\n- metadados: rastreabilidade, comum a todos os processos\n\nO Processo 6 NAO recalcula score, juros, decisao ou risco: esses resultados sao recebidos dos processos responsaveis.\n\nCompatibilidade: a API tambem aceita o formato plano da versao 1.0.0 deste projeto (id_operacao, tipo_produto, cliente, valor, prazo_meses, taxa_juros_mensal). Esse formato e convertido para este contrato antes da validacao. Ver docs/contrato-json.md.",
+  "x-versaoContrato": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "correlacao", "documento", "cliente"],
+  "properties": {
+    "schemaVersion": {
+      "description": "Versao do contrato canonico usada nesta mensagem. A linha 1.x e compativel entre si: versoes menores apenas acrescentam campos opcionais ou novos valores de enum. Uma mudanca incompativel criara a pasta schemas/v2 e passara a exigir a linha 2.x.",
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$"
+    },
+    "correlacao": {
+      "$ref": "correlacao.schema.json"
+    },
+    "documento": {
+      "$ref": "documento.schema.json"
+    },
+    "cliente": {
+      "$ref": "cliente.schema.json"
+    },
+    "cadastro": {
+      "$ref": "cadastro.schema.json"
+    },
+    "promocao": {
+      "$ref": "promocao.schema.json"
+    },
+    "credito": {
+      "$ref": "credito.schema.json"
+    },
+    "produtoFinanceiro": {
+      "$ref": "produto_financeiro.schema.json"
+    },
+    "financiamento": {
+      "$ref": "financiamento.schema.json"
+    },
+    "score": {
+      "$ref": "score.schema.json"
+    },
+    "juros": {
+      "$ref": "juros.schema.json"
+    },
+    "decisao": {
+      "$ref": "decisao.schema.json"
+    },
+    "operacaoFinanceira": {
+      "$ref": "operacao_financeira.schema.json"
+    },
+    "metadados": {
+      "$ref": "metadados.schema.json"
+    }
+  },
+  "allOf": [
+    {
+      "title": "RegraPessoaFisica",
+      "description": "Quando o cliente e pessoa fisica, o bloco dadosPF e exigido com nome completo e CPF. Equivale aos campos nome e documento exigidos pelo contrato v1.0.0 deste projeto e ao nome e CPF exigidos pelo grupo Financiamento de Imoveis.",
+      "if": {
+        "required": ["cliente"],
+        "properties": {
+          "cliente": {
+            "required": ["tipoPessoa"],
+            "properties": {
+              "tipoPessoa": { "const": "PF" }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "cliente": {
+            "required": ["dadosPF"],
+            "properties": {
+              "dadosPF": {
+                "required": ["nomeCompleto", "cpf"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraPessoaJuridica",
+      "description": "Quando o cliente e pessoa juridica, o bloco dadosPJ e exigido. NENHUM campo interno e exigido: o contrato completo de PJ ainda depende de alinhamento com o grupo Credito PF e PJ, e exigir campos aqui seria inventar requisito.",
+      "if": {
+        "required": ["cliente"],
+        "properties": {
+          "cliente": {
+            "required": ["tipoPessoa"],
+            "properties": {
+              "tipoPessoa": { "const": "PJ" }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "cliente": {
+            "required": ["dadosPJ"]
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraFinanciamentoImobiliario",
+      "description": "Quando o financiamento e imobiliario, valem as exigencias declaradas pelo grupo Financiamento de Imoveis: o sub-bloco imobiliario, a renda mensal e o endereco do cliente com logradouro e cidade. Dados automotivos NAO sao exigidos.",
+      "if": {
+        "required": ["financiamento"],
+        "properties": {
+          "financiamento": {
+            "required": ["tipo"],
+            "properties": {
+              "tipo": { "const": "IMOBILIARIO" }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["cadastro"],
+        "properties": {
+          "financiamento": {
+            "required": ["imobiliario"]
+          },
+          "cadastro": {
+            "required": ["rendaMensal"]
+          },
+          "cliente": {
+            "required": ["endereco"],
+            "properties": {
+              "endereco": {
+                "required": ["logradouro", "cidade"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraFinanciamentoImobiliarioPessoaFisica",
+      "description": "A data de nascimento e exigida pelo grupo Financiamento de Imoveis. A exigencia se aplica somente a pessoa fisica em operacao imobiliaria, porque o grupo descreveu apenas o fluxo de PF.",
+      "if": {
+        "allOf": [
+          {
+            "required": ["financiamento"],
+            "properties": {
+              "financiamento": {
+                "required": ["tipo"],
+                "properties": {
+                  "tipo": { "const": "IMOBILIARIO" }
+                }
+              }
+            }
+          },
+          {
+            "required": ["cliente"],
+            "properties": {
+              "cliente": {
+                "required": ["tipoPessoa"],
+                "properties": {
+                  "tipoPessoa": { "const": "PF" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "cliente": {
+            "properties": {
+              "dadosPF": {
+                "required": ["dataNascimento"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraFinanciamentoAutomotivo",
+      "description": "Quando o financiamento e automotivo, o sub-bloco automotivo e exigido, mas NENHUM campo interno e exigido: o contrato do Processo 8 ainda nao foi fornecido. Dados imobiliarios NAO sao exigidos.",
+      "if": {
+        "required": ["financiamento"],
+        "properties": {
+          "financiamento": {
+            "required": ["tipo"],
+            "properties": {
+              "tipo": { "const": "AUTOMOTIVO" }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "financiamento": {
+            "required": ["automotivo"]
+          }
+        }
+      }
+    },
+    {
+      "title": "RegraCoerenciaModeloScore",
+      "description": "O codigo do modelo de score deve ser coerente com o tipo de pessoa: SCORE_PF para pessoa fisica e SCORE_PJ para pessoa juridica. Os dois codigos e os dois tipos de pessoa foram informados pelo grupo Score, e a correspondencia entre eles e o unico pareamento possivel entre os valores declarados.",
+      "if": {
+        "required": ["score", "cliente"],
+        "properties": {
+          "cliente": {
+            "required": ["tipoPessoa"],
+            "properties": {
+              "tipoPessoa": { "const": "PF" }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "score": {
+            "properties": {
+              "modelo": {
+                "properties": {
+                  "codigo": { "const": "SCORE_PF" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

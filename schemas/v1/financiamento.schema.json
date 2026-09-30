@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/financiamento.schema.json",
+  "title": "Financiamento",
+  "description": "Dados especificos do financiamento. O campo tipo seleciona qual sub-bloco se aplica: imobiliario (Processo 4) ou automotivo (Processo 8). Uma operacao imobiliaria NAO exige dados automotivos e vice-versa; essa exigencia condicional e aplicada no schema raiz, em if/then.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tipo"],
+  "properties": {
+    "tipo": {
+      "title": "TipoFinanciamento",
+      "description": "Modalidade do financiamento. Os dois valores correspondem aos Processos 4 (Financiamento de Imoveis) e 8 (Financiamento Automotivo) da Esteira.",
+      "type": "string",
+      "enum": ["IMOBILIARIO", "AUTOMOTIVO"]
+    },
+    "imobiliario": {
+      "title": "FinanciamentoImobiliario",
+      "description": "Dados do financiamento imobiliario, conforme entrada e saida declaradas pelo grupo Financiamento de Imoveis. Os campos calculados pelo proprio grupo (valor financiado, parcelas, totais, comprometimento de renda) sao OPCIONAIS aqui: o Processo 6 apenas apresenta o que recebe e nao recalcula nenhum deles. OBSERVACAO: a matricula do imovel nao foi implementada pelo grupo e portanto nao existe neste contrato.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valorImovel",
+        "valorEntrada",
+        "prazoMeses",
+        "taxaJurosMensal",
+        "sistemaAmortizacao"
+      ],
+      "properties": {
+        "tipoImovel": {
+          "description": "Tipo do imovel. A lista de valores aceitos ainda nao foi definida pelo grupo, portanto e aceito como texto livre.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "cidade": {
+          "description": "Cidade do IMOVEL. Nao confundir com cliente.endereco.cidade, que e a cidade do cliente.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "estado": {
+          "description": "Unidade federativa do IMOVEL, com 2 letras maiusculas.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "valorImovel": {
+          "$ref": "comuns.schema.json#/$defs/valorMonetario",
+          "description": "Valor do imovel. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+        },
+        "valorEntrada": {
+          "$ref": "comuns.schema.json#/$defs/valorMonetario",
+          "description": "Valor da entrada. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+        },
+        "valorFinanciado": {
+          "$ref": "comuns.schema.json#/$defs/valorMonetario",
+          "description": "Valor financiado, calculado pelo grupo Financiamento de Imoveis. O Processo 6 nao o recalcula."
+        },
+        "prazoMeses": {
+          "$ref": "comuns.schema.json#/$defs/prazoMeses",
+          "description": "Prazo do financiamento em meses. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+        },
+        "taxaJurosMensal": {
+          "$ref": "comuns.schema.json#/$defs/taxaPercentualMensal",
+          "description": "Taxa de juros em PERCENTUAL mensal (1.35 = 1,35% ao mes), conforme a regra do grupo Financiamento de Imoveis. Difere de operacaoFinanceira.taxaJuros, que o grupo Controle Financeiro declarou em forma decimal."
+        },
+        "sistemaAmortizacao": {
+          "$ref": "comuns.schema.json#/$defs/sistemaAmortizacao",
+          "description": "Sistema de amortizacao. Obrigatorio, conforme o grupo Financiamento de Imoveis."
+        },
+        "valorPrimeiraParcela": {
+          "$ref": "comuns.schema.json#/$defs/valorMonetario",
+          "description": "Valor da primeira parcela, calculado pelo grupo Financiamento de Imoveis."
+        },
+        "valorUltimaParcela": {
+          "$ref": "comuns.schema.json#/$defs/valorMonetario",
+          "description": "Valor da ultima parcela, calculado pelo grupo Financiamento de Imoveis."
+        },
+        "totalJurosEstimado": {
+          "$ref": "comuns.schema.json#/$defs/valorMonetario",
+          "description": "Total estimado de juros, calculado pelo grupo Financiamento de Imoveis."
+        },
+        "totalPagoEstimado": {
+          "$ref": "comuns.schema.json#/$defs/valorMonetario",
+          "description": "Total estimado pago, calculado pelo grupo Financiamento de Imoveis."
+        },
+        "comprometimentoRenda": {
+          "description": "Comprometimento da renda, calculado pelo grupo Financiamento de Imoveis. PENDENCIA: o grupo nao informou se o valor e percentual (0 a 100) ou fracao (0 a 1), portanto apenas o piso 0 e validado.",
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "automotivo": {
+      "title": "FinanciamentoAutomotivo",
+      "description": "Dados do financiamento automotivo (Processo 8). PENDENCIA: o contrato do Financiamento Automotivo ainda NAO foi fornecido. O bloco existe para reservar a area arquitetural, aceita propriedades adicionais e nao declara nenhum campo. Quando o grupo fornecer o contrato, os campos serao declarados aqui sem alterar o restante da estrutura.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "integracoes": {
+      "description": "Informacoes das integracoes consultadas durante a analise, citadas na saida do grupo Financiamento de Imoveis. PENDENCIA: a estrutura de cada item ainda nao foi informada, portanto qualquer objeto e aceito.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+}

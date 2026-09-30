@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/score.schema.json",
+  "title": "Score",
+  "description": "RESULTADO da avaliacao de risco, produzido pelo Processo 10 (Score). O Processo 6 nao recalcula o score: apenas recebe, valida e apresenta. As entradas do calculo ficam em cadastro e cliente.dadosPF. Os campos clienteId e tipoPessoa, presentes na saida original do grupo Score, nao sao repetidos aqui: sao lidos de correlacao.idCliente e cliente.tipoPessoa, para evitar a mesma informacao em varios blocos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scoreFinal",
+    "faixaRisco",
+    "probabilidadeDefault",
+    "modelo",
+    "calculatedAt",
+    "origem",
+    "componentes",
+    "fatoresImpacto"
+  ],
+  "properties": {
+    "scoreFinal": {
+      "description": "Pontuacao final do cliente. Numero inteiro de 0 a 1000, conforme regra do grupo Score.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000
+    },
+    "faixaRisco": {
+      "title": "FaixaRisco",
+      "description": "Faixa de risco atribuida ao cliente. Valores informados pelo grupo Score.",
+      "type": "string",
+      "enum": ["EXCELENTE", "BOM", "REGULAR", "CRITICO"]
+    },
+    "probabilidadeDefault": {
+      "description": "Probabilidade de inadimplencia, em numero decimal. O grupo Score nao definiu limite superior, portanto apenas o piso 0 e validado. PENDENCIA: confirmar se a escala e 0 a 1 ou 0 a 100.",
+      "type": "number",
+      "minimum": 0
+    },
+    "modelo": {
+      "title": "ScoreModelo",
+      "description": "Identificacao do modelo que produziu o resultado. Preservada para rastreabilidade: o mesmo cliente pode ter scores calculados por versoes diferentes do modelo.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["codigo"],
+      "properties": {
+        "codigo": {
+          "description": "Codigo do modelo. Valores informados pelo grupo Score.",
+          "type": "string",
+          "enum": ["SCORE_PF", "SCORE_PJ"]
+        },
+        "versao": {
+          "description": "Versao do modelo, no formato usado pelo grupo Score (exemplo: v1.1.0).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      }
+    },
+    "calculatedAt": {
+      "$ref": "comuns.schema.json#/$defs/timestampUtc",
+      "description": "Momento do calculo, em ISO-8601 UTC, conforme regra do grupo Score."
+    },
+    "origem": {
+      "title": "ScoreOrigem",
+      "description": "Indica se o resultado foi calculado agora ou recuperado da base. Valores informados pelo grupo Score.",
+      "type": "string",
+      "enum": ["CALCULO", "BANCO"]
+    },
+    "componentes": {
+      "description": "Componentes que formaram a pontuacao. O grupo Score exige que a lista EXISTA no contrato de saida, podendo estar vazia. Cada componente PODE possuir os campos abaixo, portanto nenhum deles e obrigatorio.",
+      "type": "array",
+      "items": {
+        "title": "ScoreComponente",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "pontuacao": {
+            "type": "number"
+          },
+          "pontuacaoMaxima": {
+            "type": "number"
+          },
+          "pesoPonderado": {
+            "type": "number"
+          },
+          "motivo": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "fatoresImpacto": {
+      "description": "Fatores que impactaram a pontuacao. O grupo Score exige que a lista EXISTA no contrato de saida, podendo estar vazia. PENDENCIA: a estrutura de cada item ainda nao foi informada pelo grupo, portanto qualquer objeto e aceito e nenhum campo e validado.",
+      "type": "array",
+      "items": {
+        "title": "ScoreFatorImpacto",
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+}

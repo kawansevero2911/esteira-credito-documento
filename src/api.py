@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import json
 from typing import Annotated, Any
 
@@ -8,6 +7,7 @@ from fastapi import Body, FastAPI, HTTPException, Path
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 
+from .contrato import componentes_openapi, versao_contrato
 from .modelos import (
     DocumentoCriado,
     DocumentoMetadados,
@@ -15,26 +15,56 @@ from .modelos import (
     ErroNaoEncontrado,
     Saude,
 )
-from .processo import BASE_DIR, SCHEMA_PATH, buscar_documento, executar_processo
+from .processo import BASE_DIR, buscar_documento, executar_processo
 
-EXAMPLES_DIR = BASE_DIR / "examples"
+EXEMPLOS_DIR = BASE_DIR / "examples"
 
-DESCRICAO_API = """
-API do grupo **Estruturação de Documentos Não Relacionais (JSON, PDF)** da
-Esteira de Crédito.
+NOME_COMPONENTE_CONTRATO = "OperacaoCredito"
 
-Recebe uma operação de crédito em JSON, valida contra o contrato
-(JSON Schema Draft 2020-12), mapeia os dados para o modelo documental, gera o
-PDF, armazena os metadados e publica o evento `documento.gerado`.
+DESCRICAO_API = f"""
+API do **Processo 6 — Estruturação de Documentos Não Relacionais (JSON, PDF)**
+da Esteira de Crédito.
+
+Recebe uma operação de crédito em JSON, valida contra o **contrato canônico da
+Esteira** (JSON Schema Draft 2020-12, versão **{versao_contrato()}**), mapeia os
+dados para o modelo documental, gera o PDF, armazena os metadados e publica o
+evento `documento.gerado`.
 
 ### Fluxo
 `receber → validar → (dados válidos?) → mapear → gerar PDF → armazenar → publicar evento`
 
+Se a validação falhar, o fluxo para: **nenhum PDF é gerado** e nenhum registro
+documental é criado.
+
+### Contrato único, blocos por processo
+O corpo do `POST /api/documentos` é o contrato canônico `{NOME_COMPONENTE_CONTRATO}`.
+Ele é dividido em blocos, e **cada processo preenche apenas o seu**:
+
+| Bloco | Processo responsável |
+|---|---|
+| `correlacao`, `metadados` | comuns a todos |
+| `documento` | 6 — Estruturação de Documentos |
+| `cliente`, `cadastro`, `credito` | 3 — Crédito PF e PJ |
+| `promocao` | 1 — Promoções e Ações de Crédito |
+| `produtoFinanceiro` | 7 — Produtos Financeiros |
+| `financiamento` | 4 — Imóveis / 8 — Automotivo |
+| `score` | 10 — Score |
+| `juros` | 5 — Cálculo de Juros |
+| `decisao` | 9 — Decisão |
+| `operacaoFinanceira` | 2 — Controle Financeiro de Operações |
+
+Só `schemaVersion`, `correlacao`, `documento` e `cliente` são obrigatórios
+sempre. O restante depende do produto — as regras condicionais estão no schema
+(`allOf` / `if` / `then`).
+
+A linguagem de quem integra não importa: a comunicação é HTTP + JSON + JSON Schema.
+
 ### Como testar por aqui
 1. Abra `POST /api/documentos` e clique em **Try it out**.
-2. Escolha o exemplo **operacao_valida** (ou **operacao_invalida** para ver o erro 400).
+2. Escolha um exemplo na lista (`operacao_valida`, `operacao_completa`,
+   `operacao_invalida`…).
 3. Clique em **Execute** e copie o `documento_id` da resposta.
-4. Use o `documento_id` em `GET /api/documentos/{documento_id}`.
+4. Use o `documento_id` em `GET /api/documentos/{{documento_id}}`.
 """
 
 TAGS = [
@@ -44,27 +74,76 @@ TAGS = [
     },
     {
         "name": "Documentos",
-        "description": "Estruturação, emissão e consulta de documentos da operação de crédito.",
+        "description": (
+            "Estruturação, emissão e consulta de documentos da operação de crédito. "
+            "A entrada segue o contrato canônico da Esteira."
+        ),
     },
 ]
 
 
 def _carregar_exemplo(nome: str) -> dict:
-    with open(EXAMPLES_DIR / nome, encoding="utf-8") as arquivo:
+    with open(EXEMPLOS_DIR / nome, encoding="utf-8") as arquivo:
         return json.load(arquivo)
 
 
 EXEMPLOS_OPERACAO = {
     "operacao_valida": {
-        "summary": "Operação válida (financiamento de automóvel)",
-        "description": "Atende ao contrato. Resultado esperado: HTTP 201.",
+        "summary": "1. Financiamento imobiliário PF",
+        "description": (
+            "Operação enviada pelo processo Financiamento de Imóveis, sem score, "
+            "decisão nem operação financeira. Resultado esperado: HTTP 201."
+        ),
         "value": _carregar_exemplo("operacao_valida.json"),
     },
-    "operacao_invalida": {
-        "summary": "Operação inválida",
+    "operacao_com_score": {
+        "summary": "2. Com score",
         "description": (
-            "Sem cliente.documento, valor negativo e prazo zero. "
-            "Resultado esperado: HTTP 400 com código DADOS_INVALIDOS."
+            "Mesma estrutura, acrescida do bloco `score` preenchido pelo processo "
+            "Score. Resultado esperado: HTTP 201."
+        ),
+        "value": _carregar_exemplo("operacao_com_score.json"),
+    },
+    "operacao_com_decisao": {
+        "summary": "3. Com decisão e juros",
+        "description": (
+            "Acrescenta os blocos `juros` e `decisao`. Resultado esperado: HTTP 201."
+        ),
+        "value": _carregar_exemplo("operacao_com_decisao.json"),
+    },
+    "operacao_completa": {
+        "summary": "4. Com operação financeira e cronograma",
+        "description": (
+            "Operação percorrendo a Esteira inteira, com o bloco "
+            "`operacaoFinanceira` e o cronograma de parcelas do processo Controle "
+            "Financeiro. Resultado esperado: HTTP 201."
+        ),
+        "value": _carregar_exemplo("operacao_completa.json"),
+    },
+    "operacao_credito_pj": {
+        "summary": "5. Crédito pessoa jurídica",
+        "description": (
+            "Mostra que o contrato não é exclusivo de pessoa física. O bloco "
+            "`dadosPJ` não exige campos porque o contrato de PJ ainda depende do "
+            "grupo Crédito PF e PJ. Resultado esperado: HTTP 201."
+        ),
+        "value": _carregar_exemplo("operacao_credito_pj.json"),
+    },
+    "legado_v1_plano": {
+        "summary": "6. Formato plano da v1.0.0 (compatibilidade)",
+        "description": (
+            "Formato antigo, em snake_case. É convertido para o contrato canônico "
+            "antes da validação. Resultado esperado: HTTP 201 com "
+            "`formatoEntrada: legado_v1`."
+        ),
+        "value": _carregar_exemplo("legado_v1_plano.json"),
+    },
+    "operacao_invalida": {
+        "summary": "7. Operação inválida",
+        "description": (
+            "CPF com pontuação, data inexistente, valor negativo, prazo zero, "
+            "enums inválidos, score fora de 0–1000 e campo obrigatório ausente. "
+            "Resultado esperado: HTTP 400 com código DADOS_INVALIDOS e nenhum PDF gerado."
         ),
         "value": _carregar_exemplo("operacao_invalida.json"),
     },
@@ -73,11 +152,11 @@ EXEMPLOS_OPERACAO = {
 app = FastAPI(
     title="Esteira de Crédito — Estruturação de Documentos",
     description=DESCRICAO_API,
-    version="1.1.0",
+    version="1.2.0",
     openapi_tags=TAGS,
     swagger_ui_parameters={
         "docExpansion": "list",
-        "defaultModelsExpandDepth": 1,
+        "defaultModelsExpandDepth": 2,
         "displayRequestDuration": True,
     },
 )
@@ -92,7 +171,10 @@ def raiz() -> RedirectResponse:
     "/api/saude",
     tags=["Infraestrutura"],
     summary="Verificar disponibilidade",
-    description="Retorna `ok` quando o serviço está no ar. Pode ser usado pelos demais grupos antes de integrar.",
+    description=(
+        "Retorna `ok` quando o serviço está no ar. Pode ser usado pelos demais "
+        "grupos antes de integrar."
+    ),
     response_model=Saude,
 )
 def saude() -> dict:
@@ -105,16 +187,22 @@ def saude() -> dict:
     tags=["Documentos"],
     summary="Gerar documento de uma operação de crédito",
     description=(
-        "Valida a operação contra o JSON Schema `OperacaoCredito`. Se for válida, "
-        "gera o PDF, armazena os metadados e publica o evento `documento.gerado`. "
-        "Se for inválida, o fluxo é interrompido e nenhum PDF é gerado."
+        "Valida a operação contra o contrato canônico `OperacaoCredito`. Se for "
+        "válida, mapeia para o modelo documental, gera o PDF, armazena os "
+        "metadados e publica o evento `documento.gerado`. Se for inválida, o "
+        "fluxo é interrompido: nenhum PDF é gerado e nenhum registro é criado.\n\n"
+        "Aceita também o formato plano da versão 1.0.0, que é convertido para o "
+        "contrato canônico antes da validação — a resposta indica qual formato "
+        "foi recebido em `formatoEntrada`."
     ),
     response_model=DocumentoCriado,
     response_description="Documento gerado com sucesso.",
     responses={
         400: {
             "model": ErroDadosInvalidos,
-            "description": "Os dados não atendem ao contrato JSON Schema. Nenhum documento foi gerado.",
+            "description": (
+                "Os dados não atendem ao contrato JSON Schema. Nenhum documento foi gerado."
+            ),
         },
     },
 )
@@ -150,26 +238,14 @@ def obter_documento(
     return documento
 
 
-def _schema_operacao_para_openapi() -> dict:
-    """Converte o JSON Schema do contrato em um componente do OpenAPI.
-
-    O OpenAPI 3.1 usa JSON Schema 2020-12, então o arquivo do contrato pode ser
-    reaproveitado diretamente. Só removemos $schema e $id, que não fazem
-    sentido dentro de components/schemas.
-    """
-    with open(SCHEMA_PATH, encoding="utf-8") as arquivo:
-        schema = json.load(arquivo)
-    schema = copy.deepcopy(schema)
-    schema.pop("$schema", None)
-    schema.pop("$id", None)
-    schema.setdefault(
-        "description",
-        "Contrato de entrada da operação de crédito (arquivo schemas/operacao_credito.schema.json).",
-    )
-    return schema
-
-
 def openapi_personalizado() -> dict:
+    """OpenAPI gerado da própria API, com o contrato publicado por bloco.
+
+    O corpo do POST é documentado com o MESMO contrato usado na validação, para
+    que Swagger e validação nunca fiquem diferentes. Cada bloco do contrato vira
+    um componente com nome próprio (`Cliente`, `Score`, `Decisao`…), de modo que
+    quem integra consiga abrir bloco por bloco no Swagger.
+    """
     if app.openapi_schema:
         return app.openapi_schema
 
@@ -181,12 +257,13 @@ def openapi_personalizado() -> dict:
         tags=app.openapi_tags,
     )
 
-    # O corpo do POST é documentado com o MESMO JSON Schema usado na validação,
-    # para que Swagger e validação nunca fiquem diferentes.
     componentes = especificacao.setdefault("components", {}).setdefault("schemas", {})
-    componentes["OperacaoCredito"] = _schema_operacao_para_openapi()
-    conteudo = especificacao["paths"]["/api/documentos"]["post"]["requestBody"]["content"]["application/json"]
-    conteudo["schema"] = {"$ref": "#/components/schemas/OperacaoCredito"}
+    componentes.update(componentes_openapi())
+
+    conteudo = especificacao["paths"]["/api/documentos"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]
+    conteudo["schema"] = {"$ref": f"#/components/schemas/{NOME_COMPONENTE_CONTRATO}"}
 
     app.openapi_schema = especificacao
     return app.openapi_schema

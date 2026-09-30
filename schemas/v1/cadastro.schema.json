@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira-credito.local/schemas/v1/cadastro.schema.json",
+  "title": "Cadastro",
+  "description": "Perfil financeiro e comportamental do cliente. Reune as ENTRADAS que o grupo Score declarou utilizar no calculo, alem da renda exigida pelo grupo Financiamento de Imoveis. Os atributos pessoais (idade, estado civil, numero de dependentes) ficam em cliente.dadosPF, para que a mesma informacao nao exista em dois blocos. O RESULTADO do calculo fica no bloco score.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "rendaMensal": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Renda mensal do cliente. Obrigatoria em financiamento imobiliario (exigencia do grupo Financiamento de Imoveis) e usada como entrada pelo grupo Score."
+    },
+    "dividaTotal": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Divida total do cliente. Entrada do calculo do grupo Score."
+    },
+    "diasAtrasoUltimos12Meses": {
+      "description": "Dias de atraso acumulados nos ultimos 12 meses. Entrada do calculo do grupo Score.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "limiteRotativoUtilizado": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Valor do limite rotativo em uso. Entrada do calculo do grupo Score."
+    },
+    "limiteRotativoTotal": {
+      "$ref": "comuns.schema.json#/$defs/valorMonetario",
+      "description": "Valor total do limite rotativo disponibilizado. Entrada do calculo do grupo Score."
+    },
+    "mesesNoEmpregoAtual": {
+      "description": "Tempo no emprego atual, em meses. Entrada do calculo do grupo Score.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "mesesRelacionamentoBanco": {
+      "description": "Tempo de relacionamento com o banco, em meses. Entrada do calculo do grupo Score.",
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

@@ -1,11 +1,65 @@
 {
-  "id_operacao": "OP-2026-000123",
-  "tipo_produto": "financiamento_automovel",
-  "cliente": {
-    "nome": "Cliente Exemplo",
-    "documento": "000.000.000-00"
+  "schemaVersion": "1.2.0",
+  "correlacao": {
+    "idOperacao": "OP-2026-000123",
+    "idCliente": "CLI-EXEMPLO-0001",
+    "idProposta": "PROP-EXEMPLO-0001"
   },
-  "valor": 45000.0,
-  "prazo_meses": 48,
-  "taxa_juros_mensal": 1.35
+  "documento": {
+    "tipoDocumento": "PROPOSTA_CREDITO",
+    "titulo": "Proposta de Financiamento Imobiliário",
+    "observacoes": "Documento de exemplo. Os dados nao correspondem a um cliente real."
+  },
+  "cliente": {
+    "tipoPessoa": "PF",
+    "dadosPF": {
+      "nomeCompleto": "Cliente Exemplo da Silva",
+      "cpf": "12345678901",
+      "dataNascimento": "1990-05-12",
+      "idade": 36,
+      "estadoCivil": "CASADO",
+      "numeroDependentes": 2
+    },
+    "contato": {
+      "telefone": "(81) 90000-0000",
+      "email": "cliente.exemplo@example.com"
+    },
+    "endereco": {
+      "logradouro": "Rua de Exemplo",
+      "numero": "100",
+      "bairro": "Centro",
+      "cidade": "Recife",
+      "estado": "PE",
+      "cep": "50000000"
+    }
+  },
+  "cadastro": {
+    "rendaMensal": 8500.00,
+    "dividaTotal": 12000.00,
+    "mesesNoEmpregoAtual": 48,
+    "mesesRelacionamentoBanco": 72,
+    "diasAtrasoUltimos12Meses": 0
+  },
+  "produtoFinanceiro": {
+    "categoria": "FINANCIAMENTO_IMOVEL"
+  },
+  "financiamento": {
+    "tipo": "IMOBILIARIO",
+    "imobiliario": {
+      "tipoImovel": "APARTAMENTO",
+      "cidade": "Recife",
+      "estado": "PE",
+      "valorImovel": 400000.00,
+      "valorEntrada": 80000.00,
+      "valorFinanciado": 320000.00,
+      "prazoMeses": 360,
+      "taxaJurosMensal": 0.95,
+      "sistemaAmortizacao": "SAC"
+    }
+  },
+  "metadados": {
+    "origem": "FINANCIAMENTO_IMOVEIS",
+    "criadoEm": "2026-09-25T18:00:00Z",
+    "processosParticipantes": ["FINANCIAMENTO_IMOVEIS", "CREDITO_PF_PJ"]
+  }
 }
