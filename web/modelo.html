@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banco de provas — Estruturação de Documentos</title>
+<!--
+  BANCO DE PROVAS DO PROCESSO 6 — ESTRUTURAÇÃO DE DOCUMENTOS
+
+  Arquivo único, sem build e sem dependências. Abra direto no navegador ou
+  deixe o servidor local servi-lo em http://127.0.0.1:8000/.
+
+  Para que serve: enviar uma operação de crédito ao backend e ler o que o
+  contrato respondeu — o documento emitido, ou a lista de campos recusados.
+  Cobre os três endpoints: GET /api/saude, POST /api/documentos e
+  GET /api/documentos/{documento_id}.
+
+  Os sete exemplos vêm de examples/ do repositório, embutidos aqui para o
+  arquivo funcionar sem servidor. Se os exemplos mudarem, regenere com
+  python -m scripts.gerar_frontend.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Papel de livro-razão: verde-acinzentado, não creme. */
+    --papel: #EDF0EA;
+    --papel-fundo: #E3E7DE;
+    --papel-alto: #F6F8F3;
+    --tinta: #1C2621;
+    --tinta-fraca: #5A6760;
+    --regua: #C7D0C4;
+    --regua-forte: #A8B4A5;
+    /* Carimbos. */
+    --selo-ok: #2F6B4F;
+    --selo-nao: #8A2B33;
+    /* Latão, para a ação. */
+    --latao: #9A6E12;
+    --latao-claro: #B8841C;
+    --latao-texto: #FFF8E8;
+    --sombra: rgba(28, 38, 33, 0.10);
+    --fonte: 'Archivo', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papel: #1B211D;
+      --papel-fundo: #141915;
+      --papel-alto: #232A25;
+      --tinta: #E2E8DE;
+      --tinta-fraca: #94A099;
+      --regua: #333D36;
+      --regua-forte: #4A564D;
+      --selo-ok: #6DBF95;
+      --selo-nao: #E08A91;
+      --latao: #D8A63A;
+      --latao-claro: #EBBB50;
+      --latao-texto: #15190F;
+      --sombra: rgba(0, 0, 0, 0.4);
+    }
+  }
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--papel-fundo);
+    color: var(--tinta);
+    font: 400 15px/1.5 var(--fonte);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--latao);
+    outline-offset: 2px;
+  }
+
+  /* ----------------------------------------------------------- cabeçalho */
+
+  .barra {
+    background: var(--papel);
+    border-bottom: 2px solid var(--regua-forte);
+    padding: 18px 16px 14px;
+  }
+  .barra-interna {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px 28px;
+  }
+  .identidade { flex: 1 1 280px; }
+  .barra h1 {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(22px, 3.4vw, 31px);
+    letter-spacing: -0.022em;
+    line-height: 1.05;
+  }
+  .barra p {
+    margin: 4px 0 0;
+    color: var(--tinta-fraca);
+    font-size: 13.5px;
+    max-width: 58ch;
+  }
+
+  .conexao {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .conexao label {
+    font-size: 12.5px;
+    color: var(--tinta-fraca);
+    width: 100%;
+  }
+  .conexao input {
+    font: 400 13px/1 var(--mono);
+    color: var(--tinta);
+    background: var(--papel-alto);
+    border: 1px solid var(--regua-forte);
+    border-radius: 2px;
+    padding: 8px 9px;
+    width: 196px;
+  }
+
+  .saude {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--tinta-fraca);
+    white-space: nowrap;
+  }
+  .ponto {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--regua-forte);
+    flex: none;
+  }
+  .saude[data-estado="no-ar"] .ponto { background: var(--selo-ok); }
+  .saude[data-estado="fora"]  .ponto { background: var(--selo-nao); }
+  .saude[data-estado="no-ar"] { color: var(--selo-ok); }
+  .saude[data-estado="fora"]  { color: var(--selo-nao); }
+
+  /* -------------------------------------------------------------- botões */
+
+  button {
+    font: 500 14px/1 var(--fonte);
+    color: var(--tinta);
+    background: var(--papel-alto);
+    border: 1px solid var(--regua-forte);
+    border-radius: 2px;
+    padding: 9px 13px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--tinta-fraca); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .acao {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--latao-texto);
+    background: var(--latao);
+    border-color: var(--latao);
+    padding: 12px 20px;
+  }
+  .acao:hover:not(:disabled) { background: var(--latao-claro); border-color: var(--latao-claro); }
+  /* ------------------------------------------------------------- colunas */
+
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 22px 16px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    main { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  .painel {
+    background: var(--papel);
+    border: 1px solid var(--regua-forte);
+    border-radius: 2px;
+  }
+  .painel > h2 {
+    margin: 0;
+    padding: 11px 15px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid var(--regua);
+  }
+  .painel-corpo { padding: 15px; }
+
+  /* ------------------------------------------------------- lista de casos */
+
+  .casos { list-style: none; margin: 0; padding: 0; }
+  .casos li { border-bottom: 1px solid var(--regua); }
+  .casos li:last-child { border-bottom: 0; }
+
+  .caso {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.6rem 1fr auto;
+    gap: 2px 10px;
+    align-items: baseline;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+  .caso:hover { background: var(--papel-alto); border-color: transparent; }
+  .caso[aria-pressed="true"] {
+    background: var(--papel-alto);
+    box-shadow: inset 3px 0 0 var(--latao);
+  }
+  .caso-num {
+    font: 500 12px/1.4 var(--mono);
+    color: var(--tinta-fraca);
+  }
+  .caso-nome { font-weight: 600; }
+  .caso-esperado {
+    font: 500 11.5px/1.4 var(--mono);
+    color: var(--tinta-fraca);
+    border: 1px solid var(--regua-forte);
+    border-radius: 2px;
+    padding: 2px 5px;
+    white-space: nowrap;
+  }
+  .caso-desc {
+    grid-column: 2 / -1;
+    color: var(--tinta-fraca);
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+
+  /* ------------------------------------------------------------- payload */
+
+  .rotulo-campo {
+    display: block;
+    font-size: 12.5px;
+    color: var(--tinta-fraca);
+    margin: 0 0 6px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 260px;
+    resize: vertical;
+    font: 400 12.5px/1.6 var(--mono);
+    color: var(--tinta);
+    background: var(--papel-alto);
+    border: 1px solid var(--regua-forte);
+    border-radius: 2px;
+    padding: 11px 12px;
+    tab-size: 2;
+  }
+  .barra-envio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 13px;
+  }
+  .nota-json {
+    font: 500 12.5px/1.4 var(--mono);
+    color: var(--tinta-fraca);
+    flex: 1 1 auto;
+  }
+  .nota-json[data-erro="sim"] { color: var(--selo-nao); }
+
+  /* ------------------------------------------------------------- carimbo */
+
+  /* O único elemento ousado da página. Um documento que passa pelo
+     Processo 6 é emitido ou recusado: o veredito é literalmente um carimbo. */
+  .carimbo {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 9px 20px 8px;
+    border: 2.5px solid currentColor;
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1.5px var(--papel), 0 0 0 1.5px currentColor;
+    transform: rotate(-1.6deg);
+    margin: 2px 0 20px;
+  }
+  .carimbo-palavra {
+    font-weight: 900;
+    font-size: clamp(19px, 2.9vw, 25px);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .carimbo-http { font: 500 11.5px/1.3 var(--mono); letter-spacing: 0.07em; }
+  .carimbo[data-veredito="emitido"]  { color: var(--selo-ok); }
+  .carimbo[data-veredito="recusado"] { color: var(--selo-nao); }
+  .carimbo[data-veredito="ausente"]  { color: var(--tinta-fraca); }
+  .carimbo[data-veredito="falha"]    { color: var(--selo-nao); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .carimbo { transform: none; }
+  }
+
+  /* --------------------------------------------------------- campos e erros */
+
+  .campos { margin: 0; }
+  .campos div {
+    display: grid;
+    grid-template-columns: 11.5rem minmax(0, 1fr);
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--regua);
+  }
+  .campos div:last-child { border-bottom: 0; }
+  .campos dt { color: var(--tinta-fraca); font-size: 13px; }
+  .campos dd {
+    margin: 0;
+    font: 400 12.5px/1.5 var(--mono);
+    overflow-wrap: anywhere;
+  }
+
+  .sub-titulo {
+    margin: 22px 0 2px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .sub-nota {
+    margin: 3px 0 10px;
+    font-size: 12.5px;
+    color: var(--tinta-fraca);
+  }
+
+  .erros { list-style: none; margin: 0; padding: 0; }
+  .erros li {
+    padding: 9px 0 9px 12px;
+    border-bottom: 1px solid var(--regua);
+    border-left: 3px solid var(--selo-nao);
+  }
+  .erros li:last-child { border-bottom: 0; }
+  .erro-campo {
+    font: 500 12.5px/1.4 var(--mono);
+    color: var(--selo-nao);
+    overflow-wrap: anywhere;
+  }
+  .erro-regra {
+    font: 400 11px/1.4 var(--mono);
+    color: var(--tinta-fraca);
+    margin-left: 7px;
+  }
+  .erro-msg {
+    margin: 3px 0 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--tinta);
+    overflow-wrap: anywhere;
+  }
+
+  .cru {
+    margin: 0;
+    font: 400 11.5px/1.55 var(--mono);
+    background: var(--papel-alto);
+    border: 1px solid var(--regua);
+    border-radius: 2px;
+    padding: 11px 12px;
+    max-height: 310px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  details { margin-top: 20px; }
+  summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 5px 0;
+  }
+  details[open] summary { margin-bottom: 9px; }
+
+  .vazio {
+    color: var(--tinta-fraca);
+    font-size: 13.5px;
+    line-height: 1.6;
+    max-width: 44ch;
+  }
+  .vazio code {
+    font: 400 12.5px/1 var(--mono);
+    background: var(--papel-alto);
+    border: 1px solid var(--regua);
+    border-radius: 2px;
+    padding: 2px 5px;
+  }
+
+  /* ----------------------------------------------------------- histórico */
+
+  .registro { max-width: 1180px; margin: 0 auto; padding: 0 16px 40px; }
+  .registro table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--papel);
+    border: 1px solid var(--regua-forte);
+  }
+  .registro caption {
+    text-align: left;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 0 0 9px;
+  }
+  .registro th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tinta-fraca);
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--regua-forte);
+    white-space: nowrap;
+  }
+  .registro td {
+    font: 400 12.5px/1.4 var(--mono);
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--regua);
+    overflow-wrap: anywhere;
+  }
+  .registro tr:last-child td { border-bottom: 0; }
+  .registro .cod { font-weight: 500; white-space: nowrap; }
+  .registro .cod[data-faixa="ok"]    { color: var(--selo-ok); }
+  .registro .cod[data-faixa="erro"]  { color: var(--selo-nao); }
+  .registro .vazio-linha {
+    font-family: var(--fonte);
+    color: var(--tinta-fraca);
+    text-align: left;
+  }
+  .registro td button {
+    font-size: 12px;
+    padding: 4px 9px;
+  }
+  @media (max-width: 680px) {
+    .col-hora { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <div class="barra-interna">
+    <div class="identidade">
+      <h1>Banco de provas</h1>
+      <p>Processo 6 da Esteira de Crédito — estruturação de documentos. Envie uma operação e leia o que o contrato respondeu.</p>
+    </div>
+    <div class="conexao">
+      <label for="base">Endereço do backend</label>
+      <input id="base" type="url" inputmode="url" spellcheck="false" value="http://127.0.0.1:8000">
+      <button id="verificar" type="button">Verificar</button>
+      <span class="saude" id="saude" data-estado="indefinido"><span class="ponto"></span><span id="saudeTexto">sem verificação</span></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="painel" aria-labelledby="t-envio">
+    <h2 id="t-envio">Operação a enviar</h2>
+    <ul class="casos" id="casos"></ul>
+    <div class="painel-corpo" style="border-top:1px solid var(--regua)">
+      <label class="rotulo-campo" for="payload">Corpo da requisição, editável antes de enviar</label>
+      <textarea id="payload" spellcheck="false" aria-describedby="notaJson"></textarea>
+      <div class="barra-envio">
+        <button class="acao" id="emitir" type="button">Emitir documento</button>
+        <span class="nota-json" id="notaJson"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="painel" aria-labelledby="t-resposta">
+    <h2 id="t-resposta">Resposta do contrato</h2>
+    <div class="painel-corpo">
+      <p class="vazio" id="vazio">Escolha um dos sete casos e clique em <strong>Emitir documento</strong>. Se o backend não estiver no ar, suba com <code>uvicorn src.api:app --reload</code> ou <code>python -m scripts.servidor_local</code>.</p>
+      <div id="resultado" hidden></div>
+    </div>
+  </section>
+</main>
+
+<section class="registro" aria-labelledby="t-registro">
+  <table>
+    <caption id="t-registro">Chamadas desta sessão</caption>
+    <thead>
+      <tr>
+        <th scope="col" class="col-hora">Hora</th>
+        <th scope="col">Requisição</th>
+        <th scope="col">Código</th>
+        <th scope="col">Resultado</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody id="registro">
+      <tr><td class="vazio-linha" colspan="5">Nenhuma chamada ainda.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<script>
+const EXEMPLOS = /*__EXEMPLOS__*/;
+
+const elBase = document.getElementById('base');
+const elCasos = document.getElementById('casos');
+const elPayload = document.getElementById('payload');
+const elNota = document.getElementById('notaJson');
+const elEmitir = document.getElementById('emitir');
+const elVazio = document.getElementById('vazio');
+const elResultado = document.getElementById('resultado');
+const elSaude = document.getElementById('saude');
+const elSaudeTexto = document.getElementById('saudeTexto');
+const elRegistro = document.getElementById('registro');
+
+let casoAtual = null;
+let ultimoDocumentoId = null;
+
+/* ------------------------------------------------- endereço do backend */
+
+const CHAVE_BASE = 'esteira.base';
+try {
+  const salvo = localStorage.getItem(CHAVE_BASE);
+  if (salvo) elBase.value = salvo;
+} catch (e) { /* navegação privada, dados bloqueados: segue com o padrão */ }
+
+elBase.addEventListener('change', () => {
+  try { localStorage.setItem(CHAVE_BASE, elBase.value.trim()); } catch (e) { /* idem */ }
+  marcarSaude('indefinido', 'sem verificação');
+});
+
+function base() {
+  return elBase.value.trim().replace(/\/+$/, '') || 'http://127.0.0.1:8000';
+}
+
+/* ------------------------------------------------------- lista de casos */
+
+Object.entries(EXEMPLOS).forEach(([chave, caso], indice) => {
+  const li = document.createElement('li');
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  botao.className = 'caso';
+  botao.setAttribute('aria-pressed', 'false');
+  botao.dataset.chave = chave;
+  botao.innerHTML =
+    '<span class="caso-num">' + (indice + 1) + '</span>' +
+    '<span class="caso-nome"></span>' +
+    '<span class="caso-esperado">espera ' + caso.esperado + '</span>' +
+    '<span class="caso-desc"></span>';
+  botao.querySelector('.caso-nome').textContent = caso.rotulo;
+  botao.querySelector('.caso-desc').textContent = caso.descricao;
+  botao.addEventListener('click', () => carregarCaso(chave));
+  li.appendChild(botao);
+  elCasos.appendChild(li);
+});
+
+function carregarCaso(chave) {
+  casoAtual = chave;
+  elPayload.value = JSON.stringify(EXEMPLOS[chave].dados, null, 2);
+  elCasos.querySelectorAll('.caso').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.chave === chave));
+  });
+  conferirJson();
+}
+
+/* -------------------------------------------------- conferência do JSON */
+
+function conferirJson() {
+  const texto = elPayload.value.trim();
+  if (!texto) {
+    elNota.textContent = 'Corpo vazio.';
+    elNota.dataset.erro = 'sim';
+    elEmitir.disabled = true;
+    return null;
+  }
+  try {
+    const dados = JSON.parse(texto);
+    const linhas = texto.split('\n').length;
+    elNota.textContent = 'JSON válido, ' + linhas + (linhas === 1 ? ' linha' : ' linhas');
+    elNota.dataset.erro = 'nao';
+    elEmitir.disabled = false;
+    return dados;
+  } catch (erro) {
+    elNota.textContent = 'JSON malformado: ' + erro.message;
+    elNota.dataset.erro = 'sim';
+    elEmitir.disabled = true;
+    return null;
+  }
+}
+elPayload.addEventListener('input', conferirJson);
+
+/* --------------------------------------------------------------- saúde */
+
+function marcarSaude(estado, texto) {
+  elSaude.dataset.estado = estado;
+  elSaudeTexto.textContent = texto;
+}
+
+async function verificarSaude(registrar) {
+  marcarSaude('indefinido', 'verificando…');
+  try {
+    const resposta = await fetch(base() + '/api/saude');
+    const corpo = await resposta.json();
+    if (resposta.ok && corpo.status === 'ok') {
+      marcarSaude('no-ar', 'no ar — ' + corpo.servico);
+    } else {
+      marcarSaude('fora', 'respondeu ' + resposta.status);
+    }
+    if (registrar) anotar('GET /api/saude', resposta.status, corpo.servico || corpo.status || '—');
+  } catch (erro) {
+    marcarSaude('fora', 'não respondeu');
+    if (registrar) anotar('GET /api/saude', null, motivoDeRede(erro));
+  }
+}
+document.getElementById('verificar').addEventListener('click', () => verificarSaude(true));
+
+/* ------------------------------------------------------------- emissão */
+
+elEmitir.addEventListener('click', async () => {
+  const dados = conferirJson();
+  if (dados === null) return;
+
+  elEmitir.disabled = true;
+  const textoOriginal = elEmitir.textContent;
+  elEmitir.textContent = 'Emitindo…';
+
+  try {
+    const resposta = await fetch(base() + '/api/documentos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    });
+    const corpo = await lerCorpo(resposta);
+    mostrarEmissao(resposta.status, corpo);
+    marcarSaude('no-ar', 'no ar');
+    anotar('POST /api/documentos', resposta.status, resumoDaEmissao(resposta.status, corpo), corpo && corpo.documento_id);
+  } catch (erro) {
+    mostrarFalhaDeRede(erro);
+    marcarSaude('fora', 'não respondeu');
+    anotar('POST /api/documentos', null, motivoDeRede(erro));
+  } finally {
+    elEmitir.disabled = false;
+    elEmitir.textContent = textoOriginal;
+  }
+});
+
+async function lerCorpo(resposta) {
+  const texto = await resposta.text();
+  try { return JSON.parse(texto); } catch (e) { return { _naoEraJson: texto }; }
+}
+
+function resumoDaEmissao(status, corpo) {
+  if (status === 201) return 'documento ' + (corpo.documento_id || '').slice(0, 8) + '…';
+  if (status === 400) return (corpo.codigo || 'erro') + ', ' + (corpo.detalhes || []).length + ' erro(s)';
+  if (status === 422) return 'corpo rejeitado pelo framework';
+  return 'resposta inesperada';
+}
+
+/* ------------------------------------------------- desenho da resposta */
+
+function limparResultado() {
+  elVazio.hidden = true;
+  elResultado.hidden = false;
+  elResultado.textContent = '';
+  return elResultado;
+}
+
+function carimbo(veredito, palavra, http) {
+  const bloco = document.createElement('div');
+  bloco.className = 'carimbo';
+  bloco.dataset.veredito = veredito;
+  const p = document.createElement('span');
+  p.className = 'carimbo-palavra';
+  p.textContent = palavra;
+  const h = document.createElement('span');
+  h.className = 'carimbo-http';
+  h.textContent = http;
+  bloco.append(p, h);
+  return bloco;
+}
+
+function listaDeCampos(pares) {
+  const dl = document.createElement('dl');
+  dl.className = 'campos';
+  pares.forEach(([rotulo, valor]) => {
+    if (valor === undefined || valor === null || valor === '') return;
+    const linha = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = rotulo;
+    const dd = document.createElement('dd');
+    dd.textContent = String(valor);
+    linha.append(dt, dd);
+    dl.appendChild(linha);
+  });
+  return dl;
+}
+
+function subTitulo(texto, nota) {
+  const frag = document.createDocumentFragment();
+  const h = document.createElement('h3');
+  h.className = 'sub-titulo';
+  h.textContent = texto;
+  frag.appendChild(h);
+  if (nota) {
+    const p = document.createElement('p');
+    p.className = 'sub-nota';
+    p.textContent = nota;
+    frag.appendChild(p);
+  }
+  return frag;
+}
+
+function blocoCru(titulo, dados) {
+  const d = document.createElement('details');
+  const s = document.createElement('summary');
+  s.textContent = titulo;
+  const pre = document.createElement('pre');
+  pre.className = 'cru';
+  pre.textContent = JSON.stringify(dados, null, 2);
+  d.append(s, pre);
+  return d;
+}
+
+function mostrarEmissao(status, corpo) {
+  const alvo = limparResultado();
+
+  if (status === 201) {
+    const doc = corpo.documento || {};
+    const evento = corpo.evento || {};
+    ultimoDocumentoId = corpo.documento_id || null;
+
+    alvo.appendChild(carimbo('emitido', 'Emitido', 'HTTP 201'));
+    alvo.appendChild(listaDeCampos([
+      ['documento_id', corpo.documento_id],
+      ['id da operação', doc.id_operacao],
+      ['tipo de documento', doc.tipo_documento],
+      ['produto', doc.tipo_produto],
+      ['template do PDF', doc.template],
+      ['versão do contrato', doc.versao_schema],
+      ['situação', doc.status],
+      ['formato recebido', corpo.formatoEntrada],
+      ['arquivo PDF', doc.caminho_pdf],
+      ['hash do documento', doc.hash_documento],
+    ]));
+
+    alvo.appendChild(subTitulo('Evento publicado', 'O Processo 6 avisa a Esteira de que o documento existe.'));
+    alvo.appendChild(listaDeCampos([
+      ['eventType', evento.eventType],
+      ['eventVersion', evento.eventVersion],
+      ['eventId', evento.eventId],
+      ['occurredAt', evento.occurredAt],
+    ]));
+
+    const consultar = document.createElement('button');
+    consultar.type = 'button';
+    consultar.style.marginTop = '20px';
+    consultar.textContent = 'Consultar metadados deste documento';
+    consultar.addEventListener('click', () => consultarDocumento(corpo.documento_id));
+    alvo.appendChild(consultar);
+
+    alvo.appendChild(blocoCru('Resposta completa, como o backend devolveu', corpo));
+    return;
+  }
+
+  if (status === 400) {
+    alvo.appendChild(carimbo('recusado', 'Recusado', 'HTTP 400'));
+    alvo.appendChild(listaDeCampos([
+      ['código', corpo.codigo],
+      ['mensagem', corpo.mensagem],
+      ['formato recebido', corpo.formatoEntrada],
+      ['versão do contrato', corpo.versaoContrato],
+    ]));
+
+    const ocorrencias = Array.isArray(corpo.erros) ? corpo.erros : [];
+    alvo.appendChild(subTitulo(
+      ocorrencias.length + (ocorrencias.length === 1 ? ' campo recusado' : ' campos recusados'),
+      'Nenhum PDF foi gerado, nenhum metadado gravado e nenhum evento publicado.'
+    ));
+
+    const ul = document.createElement('ul');
+    ul.className = 'erros';
+    ocorrencias.forEach((oc) => {
+      const li = document.createElement('li');
+      const campo = document.createElement('span');
+      campo.className = 'erro-campo';
+      campo.textContent = oc.campo || 'raiz';
+      li.appendChild(campo);
+      if (oc.regra) {
+        const regra = document.createElement('span');
+        regra.className = 'erro-regra';
+        regra.textContent = oc.regra;
+        li.appendChild(regra);
+      }
+      const msg = document.createElement('p');
+      msg.className = 'erro-msg';
+      msg.textContent = oc.mensagem || '';
+      li.appendChild(msg);
+      ul.appendChild(li);
+    });
+    alvo.appendChild(ul);
+    alvo.appendChild(blocoCru('Resposta completa, como o backend devolveu', corpo));
+    return;
+  }
+
+  const palavra = status === 422 ? 'Corpo inválido' : 'Inesperado';
+  alvo.appendChild(carimbo('falha', palavra, 'HTTP ' + status));
+  const nota = status === 422
+    ? 'O corpo não chegou ao contrato: o framework recusou antes. O erro 400 DADOS_INVALIDOS é o que vem do contrato.'
+    : 'O backend respondeu um código que este banco de provas não prevê.';
+  alvo.appendChild(subTitulo('O que aconteceu', nota));
+  alvo.appendChild(blocoCru('Resposta completa, como o backend devolveu', corpo));
+}
+
+function mostrarFalhaDeRede(erro) {
+  const alvo = limparResultado();
+  alvo.appendChild(carimbo('falha', 'Sem resposta', 'nenhuma'));
+  alvo.appendChild(subTitulo('O backend não respondeu em ' + base(), motivoDeRede(erro)));
+
+  const pre = document.createElement('pre');
+  pre.className = 'cru';
+  pre.textContent =
+    '# serviço oficial, com Swagger em /docs\n' +
+    'pip install -r requirements.txt\n' +
+    'uvicorn src.api:app --reload\n\n' +
+    '# ou, sem instalar nada\n' +
+    'python -m scripts.servidor_local';
+  alvo.appendChild(pre);
+}
+
+function motivoDeRede(erro) {
+  const protocoloDeArquivo = location.protocol === 'file:';
+  if (protocoloDeArquivo) {
+    return 'Verifique se o servidor está no ar e se o endereço acima está certo. '
+      + 'Esta página foi aberta do disco, então o navegador exige que o backend permita CORS — '
+      + 'as duas camadas deste projeto já permitem. Mensagem do navegador: ' + erro.message;
+  }
+  return 'Verifique se o servidor está no ar e se o endereço acima está certo. Mensagem do navegador: ' + erro.message;
+}
+
+/* --------------------------------------------------------- consulta GET */
+
+async function consultarDocumento(documentoId) {
+  const id = documentoId || ultimoDocumentoId;
+  if (!id) return;
+  const caminho = '/api/documentos/' + encodeURIComponent(id);
+  try {
+    const resposta = await fetch(base() + caminho);
+    const corpo = await lerCorpo(resposta);
+    mostrarConsulta(resposta.status, corpo, id);
+    anotar('GET ' + caminho, resposta.status,
+      resposta.status === 200 ? 'metadados de ' + (corpo.id_operacao || id) : 'não encontrado', id);
+  } catch (erro) {
+    mostrarFalhaDeRede(erro);
+    anotar('GET ' + caminho, null, motivoDeRede(erro));
+  }
+}
+
+function mostrarConsulta(status, corpo, id) {
+  const alvo = limparResultado();
+
+  if (status === 200) {
+    alvo.appendChild(carimbo('emitido', 'Encontrado', 'HTTP 200'));
+    alvo.appendChild(subTitulo('Metadados gravados no repositório',
+      'Registro orientado a documentos, um arquivo por documento emitido.'));
+    alvo.appendChild(listaDeCampos([
+      ['documento_id', corpo.documento_id],
+      ['_id', corpo._id],
+      ['id da operação', corpo.id_operacao],
+      ['criado em', corpo.criado_em],
+      ['tipo de documento', corpo.tipo_documento],
+      ['produto', corpo.tipo_produto],
+      ['versão do contrato', corpo.versao_schema],
+      ['situação', corpo.status],
+      ['arquivo PDF', corpo.caminho_pdf],
+      ['hash do documento', corpo.hash_documento],
+      ['template', corpo.template],
+    ]));
+    alvo.appendChild(blocoCru('Resposta completa, como o backend devolveu', corpo));
+    return;
+  }
+
+  if (status === 404) {
+    alvo.appendChild(carimbo('ausente', 'Não encontrado', 'HTTP 404'));
+    alvo.appendChild(subTitulo('Nenhum documento com esse identificador',
+      'Procurado: ' + id));
+    alvo.appendChild(blocoCru('Resposta completa, como o backend devolveu', corpo));
+    return;
+  }
+
+  alvo.appendChild(carimbo('falha', 'Inesperado', 'HTTP ' + status));
+  alvo.appendChild(blocoCru('Resposta completa, como o backend devolveu', corpo));
+}
+
+/* ------------------------------------------------------------ histórico */
+
+let vazioDoRegistro = true;
+
+function anotar(requisicao, codigo, resultado, documentoId) {
+  if (vazioDoRegistro) {
+    elRegistro.textContent = '';
+    vazioDoRegistro = false;
+  }
+  const tr = document.createElement('tr');
+
+  const hora = document.createElement('td');
+  hora.className = 'col-hora';
+  hora.textContent = new Date().toLocaleTimeString('pt-BR');
+
+  const req = document.createElement('td');
+  req.textContent = requisicao;
+
+  const cod = document.createElement('td');
+  cod.className = 'cod';
+  cod.textContent = codigo === null ? 'sem resposta' : codigo;
+  cod.dataset.faixa = codigo === null ? 'erro' : (codigo < 400 ? 'ok' : 'erro');
+
+  const res = document.createElement('td');
+  res.textContent = resultado;
+
+  const acao = document.createElement('td');
+  if (documentoId) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = 'Consultar';
+    b.addEventListener('click', () => consultarDocumento(documentoId));
+    acao.appendChild(b);
+  }
+
+  tr.append(hora, req, cod, res, acao);
+  elRegistro.prepend(tr);
+}
+
+/* ----------------------------------------------------------- arranque */
+
+carregarCaso(Object.keys(EXEMPLOS)[0]);
+verificarSaude(false);
+</script>
+</body>
+</html>

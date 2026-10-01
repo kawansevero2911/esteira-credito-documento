@@ -4,6 +4,7 @@ import json
 from typing import Annotated, Any
 
 from fastapi import Body, FastAPI, HTTPException, Path
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 
@@ -159,6 +160,20 @@ app = FastAPI(
         "defaultModelsExpandDepth": 2,
         "displayRequestDuration": True,
     },
+)
+
+# O banco de provas de web/index.html e as paginas dos outros grupos rodam em
+# outra origem (ou em file://, cuja origem o navegador envia como "null"), e o
+# navegador bloqueia a chamada sem estes cabecalhos.
+#
+# ATENCAO: liberar qualquer origem e adequado a um servico de teste rodando em
+# localhost, que e o caso deste projeto na disciplina. Antes de expor o servico
+# em rede, troque allow_origins pela lista das origens que devem ter acesso.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 

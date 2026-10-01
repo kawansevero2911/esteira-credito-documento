@@ -135,13 +135,46 @@ curl -X POST "http://127.0.0.1:8000/api/documentos" \
   --data-binary @examples/operacao_completa.json
 ```
 
+### Banco de provas (`web/index.html`)
+
+Uma página para testar a API pelo navegador, sem Swagger e sem `curl`. Arquivo
+único, sem build e sem dependências: os sete exemplos do repositório já vêm
+embutidos.
+
+```bash
+uvicorn src.api:app --reload      # suba o backend
+```
+
+Depois abra `web/index.html` no navegador — ou, se estiver usando o servidor
+de fumaça, acesse `http://127.0.0.1:8000/`, que já serve a página.
+
+A tela escolhe um caso, deixa editar o JSON antes de enviar, e mostra o
+veredito do contrato: o documento emitido (identificador, PDF, hash e evento)
+ou a lista de campos recusados, cada um com o caminho, a regra violada e a
+mensagem. Também consulta os metadados pelo `documento_id` e verifica
+`GET /api/saude`.
+
+Se alterar `examples/` ou `web/modelo.html`, regenere a página:
+
+```bash
+python -m scripts.gerar_frontend
+```
+
+O teste `tests/test_frontend.py` falha se a página gerada ficar diferente do
+molde ou dos exemplos.
+
+> **CORS.** Para a página funcionar aberta do disco, o serviço libera qualquer
+> origem (`allow_origins=["*"]` em `src/api.py`). É adequado a um serviço de
+> teste em `localhost`; antes de expor o serviço em rede, restrinja a lista.
+
 ### Sem conseguir instalar as dependências
 
 Se a máquina não tiver acesso à rede para o `pip install`, há um servidor de
-fumaça que sobe os mesmos três endpoints usando só a biblioteca padrão:
+fumaça que sobe os mesmos três endpoints usando só a biblioteca padrão, e
+serve o banco de provas na raiz:
 
 ```bash
-python -m scripts.servidor_local
+python -m scripts.servidor_local   # abrir http://127.0.0.1:8000/
 ```
 
 Ele serve para conferir o fluxo por HTTP (201, 400, 200, 404) e para
@@ -223,6 +256,7 @@ pytest
 | `tests/test_compatibilidade.py` | conversão do formato v1.0.0 |
 | `tests/test_documento.py` | mapeamento, templates, PDF, paginação, repositório, evento, fluxo |
 | `tests/test_api.py` | endpoints, respostas, Swagger e OpenAPI |
+| `tests/test_frontend.py` | sincronia do banco de provas com `examples/` e o molde |
 
 Garantias verificadas, entre outras: **JSON inválido não gera PDF**, nem
 registro, nem evento; o contrato publicado no Swagger é idêntico ao usado na
@@ -257,9 +291,14 @@ schemas/
   operacao_credito.schema.json   contrato consolidado (gerado)
   v1/                            fonte: um arquivo por bloco
 examples/                        7 exemplos
+web/
+  modelo.html                    molde do banco de provas
+  index.html                     banco de provas (gerado, com os exemplos)
 scripts/
   gerar_bundle_schema.py         regera o contrato consolidado
   exportar_openapi.py            gera docs/openapi.json
+  gerar_frontend.py              regera web/index.html
+  servidor_local.py              servidor de fumaça, sem dependências
 storage/                         pdfs/ documentos/ eventos/
 tests/
 docs/

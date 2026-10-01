@@ -15,6 +15,10 @@ HISTÓRICO
 - Correção na conferência do contrato 1.2.0: a regra de coerência entre o
   modelo de score e o tipo de pessoa passou a valer também para pessoa
   jurídica (seção 15). A versão do contrato continua 1.2.0.
+- Banco de provas em web/index.html: página única para testar a API pelo
+  navegador, e servidor de fumaça sem dependências (seção 16). Nada do
+  contrato nem do backend mudou por causa dela, exceto a liberação de
+  CORS, necessária para qualquer frontend.
 
 ======================================================================
 1. CONTEXTO DO PROJETO
@@ -894,3 +898,107 @@ correção foi feita.
    cliente.tipoPessoa = "PJ" e score.modelo.codigo = "SCORE_PF":
    deve responder 400 DADOS_INVALIDOS apontando score.modelo.codigo.
 4. Trocar para "SCORE_PJ" e reenviar: deve responder 201.
+
+
+======================================================================
+16. BANCO DE PROVAS E SERVIDOR DE FUMAÇA
+======================================================================
+
+16.1. O PROBLEMA
+
+Para conferir a API havia duas opções: o Swagger, que exige
+pip install, e o curl, que exige montar o JSON na mão. Nenhuma das
+duas serve para mostrar o projeto rodando numa máquina sem acesso à
+rede, nem para quem quer apenas ver o contrato aceitando e recusando.
+
+16.2. O QUE FOI CRIADO
+
+web/index.html - banco de provas
+
+Página única, sem build, sem framework e sem dependências. Cobre os
+três endpoints: GET /api/saude, POST /api/documentos e
+GET /api/documentos/{documento_id}.
+
+A tela lista os sete casos de examples/, carrega o JSON escolhido num
+campo editável e mostra o que o contrato respondeu:
+
+- 201: identificador do documento, operação, produto, template do PDF,
+  versão do contrato, caminho do arquivo, hash SHA-256 e o evento
+  documento.gerado publicado;
+- 400: o código DADOS_INVALIDOS e a lista de campos recusados, cada um
+  com o caminho, a regra violada e a mensagem;
+- 404 na consulta de um identificador que não existe;
+- sem resposta: as instruções para subir o backend.
+
+Os exemplos ficam EMBUTIDOS no arquivo, porque a página precisa
+funcionar aberta direto do disco, e o protocolo file:// não lê arquivos
+vizinhos.
+
+web/modelo.html e scripts/gerar_frontend.py
+
+Embutir cria o risco de a página envelhecer em relação a examples/. O
+molde fica em web/modelo.html, com o marcador onde os exemplos entram,
+e scripts/gerar_frontend.py copia os exemplos reais para dentro dele -
+o mesmo arranjo que o contrato já usa entre schemas/v1/ e o arquivo
+consolidado.
+
+scripts/servidor_local.py
+
+Sobe os mesmos três endpoints com a biblioteca padrão do Python, para
+a máquina em que não dá para instalar nada, e serve o banco de provas
+na raiz. Não substitui o serviço oficial: não tem Swagger, não tem
+OpenAPI e não deve ser usado na integração com os outros grupos. Não
+contém nenhuma regra de negócio - chama executar_processo e
+buscar_documento, como o FastAPI chama.
+
+16.3. A ÚNICA MUDANÇA NO BACKEND: CORS
+
+O navegador bloqueia uma página que chama um endereço de outra origem
+sem os cabeçalhos de CORS, e uma página aberta do disco tem origem
+"null". Por isso src/api.py passou a usar o CORSMiddleware do FastAPI,
+e o servidor de fumaça responde aos mesmos cabeçalhos.
+
+A liberação é permissiva - allow_origins=["*"]. É adequado a um serviço
+de teste rodando em localhost, que é o caso deste projeto na
+disciplina. Fica o registro explícito: antes de expor o serviço em
+rede, a lista de origens precisa ser restringida. O aviso está no
+código e no README.
+
+Nenhum endpoint, nenhum contrato, nenhum schema e nenhuma resposta
+mudou por causa do frontend.
+
+16.4. TESTES
+
+tests/test_frontend.py, com 9 testes:
+
+- a página gerada é idêntica ao que o molde mais os exemplos produzem
+  (falha quando alguém edita examples/ e esquece de regerar);
+- o marcador do molde foi resolvido;
+- cada exemplo embutido é idêntico ao arquivo de examples/;
+- todo cenário de examples/ aparece na tela, e nenhum a mais;
+- cada caso declara rótulo, descrição e código HTTP esperado;
+- o caso inválido espera 400 e os demais esperam 201;
+- a página cobre os três endpoints;
+- a página não depende de build, framework nem CDN de biblioteca;
+- a página declara idioma e viewport.
+
+16.5. VERIFICAÇÃO FEITA NO NAVEGADOR
+
+A página foi aberta no Chromium e percorrida de ponta a ponta contra o
+servidor: caso 1 respondeu 201 com o carimbo EMITIDO, a consulta dos
+metadados respondeu 200, o caso 7 respondeu 400 com o carimbo RECUSADO
+e os 15 campos recusados listados, e o histórico registrou as três
+chamadas. Sem erro de JavaScript, sem rolagem horizontal em tela de
+390px, e legível no tema claro e no escuro.
+
+16.6. COMO VERIFICAR
+
+1. pytest                                  (141 testes devem passar)
+2. python -m scripts.gerar_frontend        (não deve mudar nada)
+3. uvicorn src.api:app --reload
+4. Abrir web/index.html no navegador
+5. Clicar nos casos 1 a 6: todos devem carimbar EMITIDO
+6. Clicar no caso 7: deve carimbar RECUSADO com 15 campos
+7. Em um caso emitido, clicar em "Consultar metadados deste documento"
+8. Sem instalar nada: python -m scripts.servidor_local e abrir
+   http://127.0.0.1:8000/
