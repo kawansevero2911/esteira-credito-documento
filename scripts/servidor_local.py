@@ -17,6 +17,21 @@ provas de web/index.html na raiz:
     python -m scripts.servidor_local
     # abrir http://127.0.0.1:8000/
 
+PARA TESTAR PELO CELULAR
+------------------------
+Por padrao o servidor so aceita conexoes da propria maquina. Para abrir o
+banco de provas no celular, suba ouvindo a rede local:
+
+    python -m scripts.servidor_local --rede
+
+O comando imprime os enderecos a digitar no celular, que precisa estar no
+MESMO Wi-Fi. Nao ha nada a configurar na pagina: o campo "Endereco do
+backend" segue a origem de onde a pagina foi aberta.
+
+ATENCAO: com --rede, qualquer aparelho da rede alcanca o servico, que libera
+CORS para qualquer origem e nao tem autenticacao. E ferramenta de teste - use
+em rede domestica ou da sala de aula, nunca em rede publica.
+
 Servir a pagina daqui resolve o CORS pela origem: pagina e API no mesmo
 endereco. O servidor tambem responde aos cabecalhos de CORS, para o caso de a
 pagina ser aberta direto do disco (file://).
@@ -37,7 +52,10 @@ responde no corpo: 201 com o documento, 400 DADOS_INVALIDOS sem gerar PDF,
 """
 from __future__ import annotations
 
+import argparse
 import json
+import socket
+import socketserver
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -47,7 +65,9 @@ from src.processo import buscar_documento, executar_processo
 BASE_DIR = Path(__file__).resolve().parents[1]
 PAGINA = BASE_DIR / "web" / "index.html"
 
+#: So a propria maquina. Com --rede, vira 0.0.0.0 e a rede local alcanca.
 ENDERECO = "127.0.0.1"
+ENDERECO_REDE = "0.0.0.0"  # noqa: S104 - intencional, ver --rede
 PORTA = 8000
 
 PREFIXO_DOCUMENTOS = "/api/documentos"
@@ -145,12 +165,85 @@ class Manipulador(BaseHTTPRequestHandler):
         self._responder_json(400 if resultado["status"] == "erro" else 201, resultado)
 
 
+class Servidor(ThreadingHTTPServer):
+    """ThreadingHTTPServer sem a consulta reversa de DNS ao subir.
+
+    ``HTTPServer.server_bind`` chama ``socket.getfqdn()`` para preencher
+    ``server_name``. Numa maquina sem resolvedor de DNS alcancavel - e
+    especialmente ao ouvir 0.0.0.0 - essa consulta fica pendente por varios
+    segundos antes de desistir, e o servidor parece travado na inicializacao.
+
+    ``server_name`` so alimenta a variavel de CGI ``SERVER_NAME``, que este
+    servidor nao usa, entao o endereco serve no lugar do nome.
+    """
+
+    def server_bind(self) -> None:
+        socketserver.TCPServer.server_bind(self)
+        endereco, porta = self.server_address[:2]
+        self.server_name = str(endereco)
+        self.server_port = porta
+
+
+def ip_na_rede_local() -> str | None:
+    """Descobre o IP desta maquina na rede local, para digitar no celular.
+
+    Abre um socket UDP para um endereco externo - sem enviar nada - so para
+    o sistema operacional revelar por qual interface a maquina sairia, e
+    portanto qual e o seu IP na rede. E o jeito de descobrir isso sem
+    depender do nome da maquina, que costuma resolver para 127.0.0.1.
+    """
+    sondagem = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sondagem.connect(("8.8.8.8", 80))
+        return sondagem.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        sondagem.close()
+
+
+def anunciar(endereco: str, porta: int) -> None:
+    print(f"Servidor de fumaça na porta {porta}")
+    print()
+    print("  Nesta máquina")
+    print(f"    http://127.0.0.1:{porta}/")
+
+    if endereco == ENDERECO_REDE:
+        ip = ip_na_rede_local()
+        print()
+        print("  No celular, no mesmo Wi-Fi — digite no navegador")
+        if ip:
+            print(f"    http://{ip}:{porta}/")
+        else:
+            print("    não foi possível descobrir o IP desta máquina.")
+            print("    Procure com: ip addr (Linux), ipconfig (Windows) ou")
+            print("    ipconfig getifaddr en0 (macOS), e use http://SEU-IP:" + str(porta) + "/")
+        print()
+        print("  A rede local alcança este serviço enquanto ele estiver no ar.")
+
+    print()
+    print("  Endpoints   GET /api/saude · POST /api/documentos · GET /api/documentos/{id}")
+    print("  Oficial     uvicorn src.api:app --reload   (traz o Swagger em /docs)")
+    print()
+
+
 def main() -> None:
-    servidor = ThreadingHTTPServer((ENDERECO, PORTA), Manipulador)
-    print(f"Servidor de fumaça em http://{ENDERECO}:{PORTA}")
-    print(f"  banco de provas  http://{ENDERECO}:{PORTA}/")
-    print("  endpoints        GET /api/saude · POST /api/documentos · GET /api/documentos/{id}")
-    print("O serviço oficial, com Swagger, é: uvicorn src.api:app --reload")
+    analisador = argparse.ArgumentParser(
+        description="Servidor de fumaça do Processo 6, sem dependências externas."
+    )
+    analisador.add_argument(
+        "--rede",
+        action="store_true",
+        help="aceita conexões da rede local, para abrir o banco de provas no celular",
+    )
+    analisador.add_argument(
+        "--porta", type=int, default=PORTA, help=f"porta a ouvir (padrão: {PORTA})"
+    )
+    argumentos = analisador.parse_args()
+
+    endereco = ENDERECO_REDE if argumentos.rede else ENDERECO
+    servidor = Servidor((endereco, argumentos.porta), Manipulador)
+    anunciar(endereco, argumentos.porta)
     try:
         servidor.serve_forever()
     except KeyboardInterrupt:

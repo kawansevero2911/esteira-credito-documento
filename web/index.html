@@ -7,8 +7,10 @@
 <!--
   BANCO DE PROVAS DO PROCESSO 6 — ESTRUTURAÇÃO DE DOCUMENTOS
 
-  Arquivo único, sem build e sem dependências. Abra direto no navegador ou
-  deixe o servidor local servi-lo em http://127.0.0.1:8000/.
+  Arquivo único, sem build e sem dependências. Abra direto no navegador, ou
+  deixe o servidor servi-lo — inclusive no celular, pelo IP da máquina na
+  rede. O campo "Endereço do backend" já nasce apontando para a origem da
+  própria página, então no celular não há nada a digitar.
 
   Para que serve: enviar uma operação de crédito ao backend e ler o que o
   contrato respondeu — o documento emitido, ou a lista de campos recusados.
@@ -444,6 +446,24 @@
   }
   @media (max-width: 680px) {
     .col-hora { display: none; }
+    /* O histórico é uma tabela de verdade: em tela estreita ela rola dentro
+       da própria moldura, em vez de espremer as colunas até o texto virar
+       uma coluna de letras. */
+    .registro { overflow-x: auto; }
+    .registro table { min-width: 540px; }
+    .registro td { white-space: nowrap; overflow-wrap: normal; }
+  }
+
+  @media (max-width: 560px) {
+    /* Rótulo acima do valor: com as duas colunas lado a lado sobra pouco
+       espaço e valores como FINANCIAMENTO_IMOVEL quebram no meio da palavra. */
+    .campos div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1px;
+      padding: 9px 0;
+    }
+    .campos dt { font-size: 12px; }
+    .campos dd { font-size: 12.5px; }
   }
 </style>
 </head>
@@ -457,7 +477,7 @@
     </div>
     <div class="conexao">
       <label for="base">Endereço do backend</label>
-      <input id="base" type="url" inputmode="url" spellcheck="false" value="http://127.0.0.1:8000">
+      <input id="base" type="url" inputmode="url" spellcheck="false">
       <button id="verificar" type="button">Verificar</button>
       <span class="saude" id="saude" data-estado="indefinido"><span class="ponto"></span><span id="saudeTexto">sem verificação</span></span>
     </div>
@@ -1098,6 +1118,16 @@ let ultimoDocumentoId = null;
 /* ------------------------------------------------- endereço do backend */
 
 const CHAVE_BASE = 'esteira.base';
+
+/* Quando a página é servida pelo próprio backend — inclusive aberta no celular
+   pelo IP da máquina na rede — a origem dela JÁ é o endereço certo. Fixar
+   127.0.0.1 faria o celular chamar a si mesmo. O endereço fixo só entra quando
+   a página é aberta do disco, onde não há origem útil. */
+const PADRAO = location.protocol.startsWith('http')
+  ? location.origin
+  : 'http://127.0.0.1:8000';
+
+elBase.value = PADRAO;
 try {
   const salvo = localStorage.getItem(CHAVE_BASE);
   if (salvo) elBase.value = salvo;
@@ -1109,7 +1139,7 @@ elBase.addEventListener('change', () => {
 });
 
 function base() {
-  return elBase.value.trim().replace(/\/+$/, '') || 'http://127.0.0.1:8000';
+  return elBase.value.trim().replace(/\/+$/, '') || PADRAO;
 }
 
 /* ------------------------------------------------------- lista de casos */

@@ -154,6 +154,30 @@ ou a lista de campos recusados, cada um com o caminho, a regra violada e a
 mensagem. Também consulta os metadados pelo `documento_id` e verifica
 `GET /api/saude`.
 
+### Testar pelo celular
+
+O celular precisa estar no **mesmo Wi-Fi** da máquina. Suba o backend ouvindo
+a rede local:
+
+```bash
+python -m scripts.servidor_local --rede        # sem instalar nada
+# ou
+uvicorn src.api:app --host 0.0.0.0             # serviço oficial, com Swagger
+```
+
+O `--rede` imprime o endereço a digitar no navegador do celular, algo como
+`http://192.168.0.42:8000/`. Com o uvicorn, descubra o IP da máquina com
+`ip addr` (Linux), `ipconfig` (Windows) ou `ipconfig getifaddr en0` (macOS), e
+acesse `http://SEU-IP:8000/docs` — nesse caso o Swagger, porque o serviço
+oficial não serve a página.
+
+Não há nada a configurar na tela: o campo **Endereço do backend** nasce
+apontando para a origem de onde a página foi aberta.
+
+> Ouvindo a rede local, qualquer aparelho do Wi-Fi alcança o serviço, que
+> libera CORS para qualquer origem e não tem autenticação. Use em rede
+> doméstica ou da sala de aula, não em rede pública.
+
 Se alterar `examples/` ou `web/modelo.html`, regenere a página:
 
 ```bash
