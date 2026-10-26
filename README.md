@@ -104,11 +104,43 @@ inválida não deixa rastro nenhum — e há teste para isso.
 | GET | `/api/saude` | Verifica se a API está disponível | 200 |
 | POST | `/api/documentos` | Valida a operação e executa o fluxo documental | 201, 400, 422 |
 | GET | `/api/documentos/{documento_id}` | Consulta os metadados de um documento gerado | 200, 404 |
+| POST | `/api/pdf/leitura` | Lê um PDF enviado e devolve as informações organizadas | 200, 400, 413 |
 
 - **400 `DADOS_INVALIDOS`** — o JSON é um objeto, mas não atende ao contrato.
   Todos os erros vêm de uma vez, em texto (`detalhes`) e estruturados (`erros`).
   Nenhum PDF é gerado.
 - **422** — o corpo nem é um objeto JSON (tratado pelo FastAPI).
+
+### Leitura de PDF (`POST /api/pdf/leitura`)
+
+Faz o caminho de volta: recebe um PDF (`Content-Type: application/pdf`) e
+devolve o texto e as informações organizadas, prontas para uso.
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/pdf/leitura" \
+  -H "Content-Type: application/pdf" \
+  --data-binary @ficha_do_cliente.pdf
+```
+
+A resposta traz:
+
+- `informacoes.dados`: campos achados pelo **rótulo** (`Nome`, `CPF`,
+  `Data de nascimento`, `Valor financiado`, `Taxa de juros`...), cada um com
+  `valor` normalizado para sistema (CPF só com dígitos, data em ISO, dinheiro
+  como número) e `formatado` para leitura (`529.982.247-25`, `03/02/1990`,
+  `R$ 7.850,00`). CPF e CNPJ vêm com `valido`, que confere os dígitos.
+- `informacoes.encontrados`: CPFs, CNPJs, e-mails, telefones, CEPs, datas,
+  valores em reais e percentuais achados em qualquer parte do texto.
+- `informacoes.cliente`: os dados do cliente já nos nomes do contrato
+  canônico (`tipoPessoa`, `dadosPF.nomeCompleto`, `dadosPF.cpf`...).
+- `texto`: o texto de cada página, para o que não foi reconhecido.
+
+Reconhece `Rótulo: valor`, rótulo numa linha e valor na seguinte, e tabelas
+(vários rótulos e, embaixo, os valores). O PDF não é guardado. PDF escaneado
+é imagem, não tem texto, e volta com `aviso_texto_vazio` (precisaria de OCR).
+
+No código: `src/leitor_pdf.py` lê o arquivo (texto, metadados, hash) e
+`src/extrator_pdf.py` organiza e formata as informações.
 
 ## 5. Execução
 
@@ -307,6 +339,8 @@ src/
   mapeador.py             contrato → modelo documental
   modelo_documental.py    seções, campos e tabelas do documento
   gerador_pdf.py          emissão do PDF
+  leitor_pdf.py           leitura de PDF (texto, metadados, hash)
+  extrator_pdf.py         organiza e formata as informações lidas do PDF
   templates_pdf/          um arquivo por layout de produto
   repositorio.py          interface + armazenamento em arquivos JSON
   publicador_evento.py    interface + publicação em arquivo JSON
