@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from typing import Annotated, Any
 
-from fastapi import Body, FastAPI, HTTPException, Path
+from fastapi import Body, FastAPI, HTTPException, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from .contrato import componentes_openapi, versao_contrato
+from .extrator_pdf import ler_e_formatar
+from .leitor_pdf import ErroLeituraPdf
 from .modelos import (
     DocumentoCriado,
     DocumentoMetadados,
@@ -78,6 +82,13 @@ TAGS = [
         "description": (
             "Estruturação, emissão e consulta de documentos da operação de crédito. "
             "A entrada segue o contrato canônico da Esteira."
+        ),
+    },
+    {
+        "name": "Leitura de PDF",
+        "description": (
+            "Leitura de um PDF enviado: extrai o texto e organiza as informações "
+            "(CPF, CNPJ, nome, valores, datas, contato) em campos formatados."
         ),
     },
 ]
@@ -251,6 +262,69 @@ def obter_documento(
     if documento is None:
         raise HTTPException(status_code=404, detail="Documento não encontrado.")
     return documento
+
+
+#: Limite do PDF recebido na leitura, para nao estourar a memoria do servico.
+TAMANHO_MAXIMO_PDF = 10 * 1024 * 1024
+
+
+@app.post(
+    "/api/pdf/leitura",
+    tags=["Leitura de PDF"],
+    summary="Ler um PDF e organizar as informações",
+    description=(
+        "Recebe um PDF no corpo da requisição (`Content-Type: application/pdf`), "
+        "extrai o texto e devolve as informações organizadas:\n\n"
+        "- `informacoes.dados`: campos achados pelo rótulo (Nome, CPF, Valor "
+        "financiado...), cada um com `valor` normalizado e `formatado` para leitura;\n"
+        "- `informacoes.encontrados`: CPFs, CNPJs, e-mails, telefones, CEPs, datas, "
+        "valores e percentuais achados em qualquer parte do texto;\n"
+        "- `informacoes.cliente`: os dados do cliente nos nomes do contrato canônico;\n"
+        "- `texto`: o texto de cada página.\n\n"
+        "O PDF não é guardado: é lido e descartado. PDFs escaneados (imagem) não "
+        "têm texto e voltam com `aviso_texto_vazio`."
+    ),
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}},
+        }
+    },
+    responses={
+        400: {"description": "O arquivo enviado não é um PDF legível."},
+        413: {"description": "O PDF passa do tamanho máximo (10 MB)."},
+    },
+)
+async def ler_pdf_enviado(request: Request):
+    conteudo = await request.body()
+    if not conteudo:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "erro", "codigo": "PDF_INVALIDO", "mensagem": "Nenhum arquivo enviado."},
+        )
+    if len(conteudo) > TAMANHO_MAXIMO_PDF:
+        return JSONResponse(
+            status_code=413,
+            content={"status": "erro", "codigo": "PDF_GRANDE_DEMAIS", "mensagem": "O PDF passa de 10 MB."},
+        )
+
+    descritor, caminho = tempfile.mkstemp(suffix=".pdf")
+    try:
+        with os.fdopen(descritor, "wb") as arquivo:
+            arquivo.write(conteudo)
+        resultado = ler_e_formatar(caminho)
+    except ErroLeituraPdf:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "erro",
+                "codigo": "PDF_INVALIDO",
+                "mensagem": "O arquivo enviado não é um PDF legível.",
+            },
+        )
+    finally:
+        os.remove(caminho)
+    return {"status": "sucesso", **resultado}
 
 
 def openapi_personalizado() -> dict:

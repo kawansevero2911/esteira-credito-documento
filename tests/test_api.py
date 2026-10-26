@@ -13,6 +13,7 @@ CAMINHOS = {
     "/api/saude",
     "/api/documentos",
     "/api/documentos/{documento_id}",
+    "/api/pdf/leitura",
 }
 
 
@@ -199,3 +200,34 @@ def test_contrato_publicado_descreve_os_campos():
     assert score["properties"]["faixaRisco"]["enum"] == ["EXCELENTE", "BOM", "REGULAR", "CRITICO"]
     assert score["properties"]["scoreFinal"]["maximum"] == 1000
     assert "componentes" in score["required"]
+
+
+# ---------------------------------------------------------- leitura de PDF
+
+def test_ler_pdf_enviado(storage_temporario):
+    emitido = client.post("/api/documentos", json=exemplo("operacao_completa")).json()
+    with open(emitido["documento"]["caminho_pdf"], "rb") as arquivo:
+        conteudo = arquivo.read()
+
+    resposta = client.post(
+        "/api/pdf/leitura", content=conteudo, headers={"Content-Type": "application/pdf"}
+    )
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert corpo["status"] == "sucesso"
+    assert corpo["arquivo"]["hash_documento"] == emitido["documento"]["hash_documento"]
+    assert corpo["informacoes"]["dados"]["cpf"]["formatado"] == "123.456.789-04"
+    assert corpo["informacoes"]["cliente"]["dadosPF"]["nomeCompleto"] == "Cliente Exemplo Contratado"
+
+
+def test_ler_arquivo_que_nao_e_pdf():
+    resposta = client.post(
+        "/api/pdf/leitura", content=b"nao sou pdf", headers={"Content-Type": "application/pdf"}
+    )
+    assert resposta.status_code == 400
+    assert resposta.json()["codigo"] == "PDF_INVALIDO"
+
+
+def test_ler_pdf_sem_corpo():
+    resposta = client.post("/api/pdf/leitura", headers={"Content-Type": "application/pdf"})
+    assert resposta.status_code == 400
