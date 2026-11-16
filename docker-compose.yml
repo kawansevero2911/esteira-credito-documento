@@ -1,0 +1,14 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: esteira-credito-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: esteira_credito
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

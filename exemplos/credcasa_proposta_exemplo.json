@@ -1,0 +1,9 @@
+{
+ "id":"FIN-EXEMPLO-001", "createdAt":"2026-09-25T21:00:00.000Z", "status":"ANÁLISE MANUAL",
+ "cliente":"Nome do Cliente", "cpf":"000.000.000-00", "nascimento":"2000-01-01",
+ "renda":5000, "telefone":"(11) 99999-9999", "email":"cliente@email.com",
+ "endereco":"Rua Exemplo, 100", "tipo":"Casa", "cidade":"São Paulo", "estado":"SP",
+ "imovel":350000, "entrada":70000, "principal":280000, "prazo":240,
+ "taxa":0.8, "sistema":"SAC", "comprometimento":38.75, "score":620,
+ "decisao":"ANÁLISE MANUAL"
+}

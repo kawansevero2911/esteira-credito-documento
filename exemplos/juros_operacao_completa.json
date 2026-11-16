@@ -1,0 +1,345 @@
+{
+  "id": 13,
+  "identificador": "OP-2026-0001",
+  "criadoEm": "2026-11-10 13:54:34",
+  "estado": "DEFINIDA",
+  "definicao": {
+    "sistema": "PRICE",
+    "definidoEm": "2026-11-13 11:07:32"
+  },
+  "taxa": {
+    "faixaRisco": "B",
+    "taxaBaseMes": 1.6,
+    "tetoTaxaMes": 1.85,
+    "taxaFinalAno": 24.6,
+    "taxaFinalMes": 1.85,
+    "tetoAplicado": true,
+    "descricaoFaixa": "Risco baixo"
+  },
+  "cliente": {
+    "documento": "52998224725",
+    "tipoPessoa": "PF"
+  },
+  "entrada": {
+    "score": 650,
+    "valor": 10000,
+    "modalidade": "CONSIGNADO_INSS",
+    "prazoMeses": 12,
+    "dataLiberacao": "2026-10-30",
+    "primeiroRelacionamento": true
+  },
+  "simulacoes": {
+    "SAC": {
+      "cet": {
+        "anualPercentual": 30.96,
+        "mensalPercentual": 2.27
+      },
+      "sistema": "SAC",
+      "encargos": {
+        "iof": {
+          "total": 200.22,
+          "diario": 162.22,
+          "adicional": 38
+        },
+        "total": 250.22,
+        "tarifaCadastro": 50
+      },
+      "totalPago": 11202.5,
+      "cronograma": [
+        {
+          "juros": 185,
+          "valor": 1018.33,
+          "numero": 1,
+          "vencimento": "2026-11-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 31,
+          "saldoDevedor": 9166.67
+        },
+        {
+          "juros": 169.58,
+          "valor": 1002.91,
+          "numero": 2,
+          "vencimento": "2026-12-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 61,
+          "saldoDevedor": 8333.34
+        },
+        {
+          "juros": 154.17,
+          "valor": 987.5,
+          "numero": 3,
+          "vencimento": "2027-02-01",
+          "amortizacao": 833.33,
+          "diasCorridos": 94,
+          "saldoDevedor": 7500.01
+        },
+        {
+          "juros": 138.75,
+          "valor": 972.08,
+          "numero": 4,
+          "vencimento": "2027-03-01",
+          "amortizacao": 833.33,
+          "diasCorridos": 122,
+          "saldoDevedor": 6666.68
+        },
+        {
+          "juros": 123.33,
+          "valor": 956.66,
+          "numero": 5,
+          "vencimento": "2027-03-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 151,
+          "saldoDevedor": 5833.35
+        },
+        {
+          "juros": 107.92,
+          "valor": 941.25,
+          "numero": 6,
+          "vencimento": "2027-04-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 182,
+          "saldoDevedor": 5000.02
+        },
+        {
+          "juros": 92.5,
+          "valor": 925.83,
+          "numero": 7,
+          "vencimento": "2027-05-31",
+          "amortizacao": 833.33,
+          "diasCorridos": 213,
+          "saldoDevedor": 4166.69
+        },
+        {
+          "juros": 77.08,
+          "valor": 910.41,
+          "numero": 8,
+          "vencimento": "2027-06-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 243,
+          "saldoDevedor": 3333.36
+        },
+        {
+          "juros": 61.67,
+          "valor": 895,
+          "numero": 9,
+          "vencimento": "2027-07-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 273,
+          "saldoDevedor": 2500.03
+        },
+        {
+          "juros": 46.25,
+          "valor": 879.58,
+          "numero": 10,
+          "vencimento": "2027-08-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 304,
+          "saldoDevedor": 1666.7
+        },
+        {
+          "juros": 30.83,
+          "valor": 864.16,
+          "numero": 11,
+          "vencimento": "2027-09-30",
+          "amortizacao": 833.33,
+          "diasCorridos": 335,
+          "saldoDevedor": 833.37
+        },
+        {
+          "juros": 15.42,
+          "valor": 848.79,
+          "numero": 12,
+          "vencimento": "2027-11-01",
+          "amortizacao": 833.37,
+          "diasCorridos": 367,
+          "saldoDevedor": 0
+        }
+      ],
+      "totalJuros": 1202.5,
+      "demonstrativo": {
+        "componentes": [
+          {
+            "valor": 10000,
+            "descricao": "Principal (valor do crédito)",
+            "percentualSobreTotalDevido": 87.32
+          },
+          {
+            "valor": 1202.5,
+            "descricao": "Juros",
+            "percentualSobreTotalDevido": 10.5
+          },
+          {
+            "valor": 200.22,
+            "descricao": "IOF",
+            "percentualSobreTotalDevido": 1.75
+          },
+          {
+            "valor": 50,
+            "descricao": "Tarifa de cadastro",
+            "percentualSobreTotalDevido": 0.44
+          }
+        ],
+        "totalDevido": 11452.72,
+        "somatorioParcelas": 11202.5
+      },
+      "valorLiberado": 9749.78,
+      "amortizacaoBase": 833.33
+    },
+    "PRICE": {
+      "cet": {
+        "anualPercentual": 30.89,
+        "mensalPercentual": 2.27
+      },
+      "sistema": "PRICE",
+      "encargos": {
+        "iof": {
+          "total": 205.65,
+          "diario": 167.65,
+          "adicional": 38
+        },
+        "total": 255.65,
+        "tarifaCadastro": 50
+      },
+      "totalPago": 11242.88,
+      "cronograma": [
+        {
+          "juros": 185,
+          "valor": 936.91,
+          "numero": 1,
+          "vencimento": "2026-11-30",
+          "amortizacao": 751.91,
+          "diasCorridos": 31,
+          "saldoDevedor": 9248.09
+        },
+        {
+          "juros": 171.09,
+          "valor": 936.91,
+          "numero": 2,
+          "vencimento": "2026-12-30",
+          "amortizacao": 765.82,
+          "diasCorridos": 61,
+          "saldoDevedor": 8482.27
+        },
+        {
+          "juros": 156.92,
+          "valor": 936.91,
+          "numero": 3,
+          "vencimento": "2027-02-01",
+          "amortizacao": 779.99,
+          "diasCorridos": 94,
+          "saldoDevedor": 7702.28
+        },
+        {
+          "juros": 142.49,
+          "valor": 936.91,
+          "numero": 4,
+          "vencimento": "2027-03-01",
+          "amortizacao": 794.42,
+          "diasCorridos": 122,
+          "saldoDevedor": 6907.86
+        },
+        {
+          "juros": 127.8,
+          "valor": 936.91,
+          "numero": 5,
+          "vencimento": "2027-03-30",
+          "amortizacao": 809.11,
+          "diasCorridos": 151,
+          "saldoDevedor": 6098.75
+        },
+        {
+          "juros": 112.83,
+          "valor": 936.91,
+          "numero": 6,
+          "vencimento": "2027-04-30",
+          "amortizacao": 824.08,
+          "diasCorridos": 182,
+          "saldoDevedor": 5274.67
+        },
+        {
+          "juros": 97.58,
+          "valor": 936.91,
+          "numero": 7,
+          "vencimento": "2027-05-31",
+          "amortizacao": 839.33,
+          "diasCorridos": 213,
+          "saldoDevedor": 4435.34
+        },
+        {
+          "juros": 82.05,
+          "valor": 936.91,
+          "numero": 8,
+          "vencimento": "2027-06-30",
+          "amortizacao": 854.86,
+          "diasCorridos": 243,
+          "saldoDevedor": 3580.48
+        },
+        {
+          "juros": 66.24,
+          "valor": 936.91,
+          "numero": 9,
+          "vencimento": "2027-07-30",
+          "amortizacao": 870.67,
+          "diasCorridos": 273,
+          "saldoDevedor": 2709.81
+        },
+        {
+          "juros": 50.13,
+          "valor": 936.91,
+          "numero": 10,
+          "vencimento": "2027-08-30",
+          "amortizacao": 886.78,
+          "diasCorridos": 304,
+          "saldoDevedor": 1823.03
+        },
+        {
+          "juros": 33.73,
+          "valor": 936.91,
+          "numero": 11,
+          "vencimento": "2027-09-30",
+          "amortizacao": 903.18,
+          "diasCorridos": 335,
+          "saldoDevedor": 919.85
+        },
+        {
+          "juros": 17.02,
+          "valor": 936.87,
+          "numero": 12,
+          "vencimento": "2027-11-01",
+          "amortizacao": 919.85,
+          "diasCorridos": 367,
+          "saldoDevedor": 0
+        }
+      ],
+      "totalJuros": 1242.88,
+      "demonstrativo": {
+        "componentes": [
+          {
+            "valor": 10000,
+            "descricao": "Principal (valor do crédito)",
+            "percentualSobreTotalDevido": 86.97
+          },
+          {
+            "valor": 1242.88,
+            "descricao": "Juros",
+            "percentualSobreTotalDevido": 10.81
+          },
+          {
+            "valor": 205.65,
+            "descricao": "IOF",
+            "percentualSobreTotalDevido": 1.79
+          },
+          {
+            "valor": 50,
+            "descricao": "Tarifa de cadastro",
+            "percentualSobreTotalDevido": 0.43
+          }
+        ],
+        "totalDevido": 11498.53,
+        "somatorioParcelas": 11242.88
+      },
+      "valorLiberado": 9744.35,
+      "parcelaFixa": 936.91
+    }
+  }
+}

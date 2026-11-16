@@ -1,0 +1,23 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema",
+ "title":"Proposta CredCasa (contrato mínimo conhecido)",
+ "description":"Campos básicos do exemplo fornecido. Campos adicionais são aceitos; o JSON real da API ainda precisa ser confirmado.",
+ "type":"object",
+ "required":["id"],
+ "properties":{
+  "id":{"type":"string","minLength":1},
+  "createdAt":{"type":"string"},
+  "status":{"type":"string"},
+  "cliente":{"oneOf":[{"type":"string"},{"type":"object"}]},
+  "cpf":{"type":"string"},
+  "imovel":{"oneOf":[{"type":"number"},{"type":"object"}]},
+  "entrada":{"type":"number","minimum":0},
+  "principal":{"type":"number","minimum":0},
+  "prazo":{"type":"integer","minimum":1},
+  "taxa":{"type":"number","minimum":0},
+  "sistema":{"enum":["SAC","PRICE"]},
+  "score":{"oneOf":[{"type":"integer"},{"type":"object"}]},
+  "decisao":{"oneOf":[{"type":"string"},{"type":"object"}]}
+ },
+ "additionalProperties":true
+}

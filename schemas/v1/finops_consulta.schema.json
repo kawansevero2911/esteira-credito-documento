@@ -1,0 +1,19 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "properties":{
+    "operacao":{"type":"object","required":["numeroOperacao","clienteId","tipoPessoa","status","produto","condicoesFinanceiras"],"properties":{
+      "numeroOperacao":{"type":"string","minLength":1},"clienteId":{"type":"string","minLength":1},
+      "tipoPessoa":{"enum":["PF","PJ"]},"status":{"type":"string"},
+      "produto":{"type":"object","required":["codigo"],"properties":{"codigo":{"type":"string"},"nome":{"type":"string"}}},
+      "condicoesFinanceiras":{"type":"object","required":["valorAprovado","prazoMeses","taxaJuros","sistemaAmortizacao","primeiroVencimento"],"properties":{
+        "valorAprovado":{"type":"number","minimum":0},"prazoMeses":{"type":"integer","minimum":1},
+        "taxaJuros":{"type":"number","minimum":0},"taxaJurosAnual":{"type":"number","minimum":0},
+        "sistemaAmortizacao":{"enum":["PRICE","SAC"]},"primeiroVencimento":{"type":"string","format":"date"}}}
+    }},
+    "parcelas":{"type":"array","minItems":1,"items":{"type":"object","required":["numero","vencimento","valorParcela","amortizacao","juros","saldoDevedor"],"properties":{
+      "numero":{"type":"integer","minimum":1},"vencimento":{"type":"string","format":"date"},
+      "valorParcela":{"type":"number","minimum":0},"amortizacao":{"type":"number","minimum":0},
+      "juros":{"type":"number","minimum":0},"saldoDevedor":{"type":"number","minimum":0}}}}
+  },"required":["operacao","parcelas"]
+}

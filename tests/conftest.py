@@ -1,19 +1,34 @@
-"""Fixtures compartilhadas pelos testes que usam o pytest."""
-from __future__ import annotations
+import json
+from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
-from src import processo
+from src.app import create_app
+
+RAIZ = Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture
-def storage_temporario(tmp_path, monkeypatch):
-    """Redireciona o armazenamento do processo para uma pasta do teste.
+def storage(tmp_path):
+    return tmp_path / "storage"
 
-    Sem isso, rodar os testes sujaria storage/ do repositorio.
-    """
-    monkeypatch.setattr(processo, "STORAGE_DIR", tmp_path)
-    monkeypatch.setattr(processo, "PDF_DIR", tmp_path / "pdfs")
-    monkeypatch.setattr(processo, "DOCUMENTOS_DIR", tmp_path / "documentos")
-    monkeypatch.setattr(processo, "EVENTOS_DIR", tmp_path / "eventos")
-    return tmp_path
+
+@pytest.fixture
+def client(storage):
+    return TestClient(create_app(storage_dir=storage, imprimir_eventos=False))
+
+
+@pytest.fixture
+def operacao_valida():
+    return json.loads((RAIZ / "exemplos" / "operacao_valida.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture
+def operacao_invalida():
+    return json.loads((RAIZ / "exemplos" / "operacao_invalida.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture
+def schema():
+    return json.loads((RAIZ / "schemas" / "v1" / "operacao_credito.schema.json").read_text(encoding="utf-8"))

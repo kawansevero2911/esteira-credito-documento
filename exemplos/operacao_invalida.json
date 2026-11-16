@@ -1,0 +1,8 @@
+{
+  "id_operacao": "OP-2026-000124",
+  "tipo_produto": "consorcio",
+  "cliente": {"nome": "Maria da Silva"},
+  "valor": -100,
+  "prazo_meses": 0,
+  "taxa_juros_mensal": 1.35
+}
