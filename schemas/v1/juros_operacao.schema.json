@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://esteira.local/schemas/v1/juros_operacao.schema.json",
+  "type": "object",
+  "required": [
+    "identificador",
+    "estado",
+    "definicao",
+    "taxa",
+    "cliente",
+    "entrada",
+    "simulacoes"
+  ],
+  "properties": {
+    "identificador": {
+      "type": "string",
+      "minLength": 1
+    },
+    "estado": {
+      "type": "string"
+    },
+    "definicao": {
+      "type": "object",
+      "required": [
+        "sistema",
+        "definidoEm"
+      ],
+      "properties": {
+        "sistema": {
+          "enum": [
+            "SAC",
+            "PRICE"
+          ]
+        },
+        "definidoEm": {
+          "type": "string"
+        }
+      }
+    },
+    "taxa": {
+      "type": "object",
+      "required": [
+        "faixaRisco",
+        "taxaFinalMes",
+        "taxaFinalAno"
+      ],
+      "properties": {
+        "faixaRisco": {
+          "type": "string"
+        },
+        "taxaFinalMes": {
+          "type": "number"
+        },
+        "taxaFinalAno": {
+          "type": "number"
+        }
+      }
+    },
+    "cliente": {
+      "type": "object",
+      "required": [
+        "documento",
+        "tipoPessoa"
+      ],
+      "properties": {
+        "documento": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tipoPessoa": {
+          "enum": [
+            "PF",
+            "PJ"
+          ]
+        }
+      }
+    },
+    "entrada": {
+      "type": "object",
+      "required": [
+        "score",
+        "valor",
+        "modalidade",
+        "prazoMeses"
+      ],
+      "properties": {
+        "score": {
+          "type": "number"
+        },
+        "valor": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "modalidade": {
+          "type": "string"
+        },
+        "prazoMeses": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "simulacoes": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "enum": [
+          "SAC",
+          "PRICE"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "cet",
+          "encargos",
+          "totalPago",
+          "cronograma",
+          "totalJuros",
+          "valorLiberado"
+        ],
+        "properties": {
+          "cet": {
+            "type": "object",
+            "required": [
+              "mensalPercentual",
+              "anualPercentual"
+            ],
+            "properties": {
+              "mensalPercentual": {
+                "type": "number"
+              },
+              "anualPercentual": {
+                "type": "number"
+              }
+            }
+          },
+          "encargos": {
+            "type": "object",
+            "required": [
+              "iof",
+              "total"
+            ],
+            "properties": {
+              "iof": {
+                "type": "object",
+                "required": [
+                  "total"
+                ],
+                "properties": {
+                  "total": {
+                    "type": "number"
+                  }
+                }
+              },
+              "total": {
+                "type": "number"
+              }
+            }
+          },
+          "totalPago": {
+            "type": "number"
+          },
+          "totalJuros": {
+            "type": "number"
+          },
+          "valorLiberado": {
+            "type": "number"
+          },
+          "cronograma": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "numero",
+                "vencimento",
+                "valor",
+                "juros",
+                "amortizacao",
+                "saldoDevedor"
+              ],
+              "properties": {
+                "numero": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "vencimento": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "valor": {
+                  "type": "number"
+                },
+                "juros": {
+                  "type": "number"
+                },
+                "amortizacao": {
+                  "type": "number"
+                },
+                "saldoDevedor": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "operacao": {
+    "id": 1, "numeroOperacao": "OP-2026-0001", "clienteId": "52998224725", "tipoPessoa": "PF",
+    "status": "ATIVA", "diasEmAtraso": 0, "dataLiberacao": "2026-10-30", "saldoDevedor": 10000,
+    "produto": {"codigo":"CONSIGNADO_INSS","nome":"Crédito pessoal consignado INSS","modalidadeBcb":"Crédito pessoal consignado INSS - Prefixado"},
+    "condicoesFinanceiras": {"valorAprovado":10000,"prazoMeses":12,"quantidadeParcelas":12,"taxaJuros":0.0185,"taxaJurosAnual":0.246,"faixaRisco":"B","tetoAplicado":true,"sistemaAmortizacao":"PRICE","primeiroVencimento":"2026-11-30"},
+    "encargos":{"iof":{"diario":167.65,"adicional":38,"total":205.65},"tarifaCadastro":50,"total":255.65},
+    "valorLiberado":9744.35,"cet":{"mensal":0.0227,"anual":0.3089},"criadoEm":"2026-10-08T18:13:02Z"
+  },
+  "parcelas": [
+    {"numero":1,"vencimento":"2026-11-30","valorParcela":936.91,"amortizacao":751.91,"juros":185,"saldoDevedor":9248.09,"status":"PENDENTE"},
+    {"numero":2,"vencimento":"2026-12-30","valorParcela":936.91,"amortizacao":765.82,"juros":171.09,"saldoDevedor":8482.27,"status":"PENDENTE"},
+    {"numero":3,"vencimento":"2027-02-01","valorParcela":936.91,"amortizacao":779.99,"juros":156.92,"saldoDevedor":7702.28,"status":"PENDENTE"}
+  ]
+}
